@@ -15,3 +15,6 @@ __pycache__/
 
 # Personal English-learning notes. Remove the "#" in front of the next line to keep them private too.
 english_notes/
+
+# When the last backup was made (backup page)
+last_backup.txt

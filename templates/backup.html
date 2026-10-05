@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Backup - Metbook{% endblock %}
+
+{% block content %}
+<div class="narrow">
+    <h1 class="page-title">Backup</h1>
+    <p class="lede">
+        Your contacts and pictures live only on this computer. A backup is a zip file you can
+        keep somewhere safe, in case something happens to the computer.
+    </p>
+
+    <div class="stack" style="margin-top:28px">
+        <div class="card">
+            <h2>Download a backup</h2>
+            {# When did you last do it? A reminder is the whole point of this line. #}
+            <p class="backup-status {% if last_backup is none or days_ago > 30 %}is-old{% endif %}" id="backup-status">
+                {% if last_backup is none %}
+                    You haven't made a backup yet.
+                {% elif days_ago == 0 %}
+                    Last backup: today, {{ last_backup.strftime('%H:%M') }}.
+                {% elif days_ago == 1 %}
+                    Last backup: yesterday.
+                {% else %}
+                    Last backup: {{ days_ago }} days ago ({{ last_backup.strftime('%d %b %Y') }}).
+                {% endif %}
+            </p>
+
+            {# A POST form: pressing the button asks the server for a new zip. The browser
+               saves it in your Downloads folder. #}
+            <form method="POST" action="{{ url_for('backup_download') }}" id="backup-form">
+                <button type="submit" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+                    Download backup
+                </button>
+            </form>
+            <p class="hint" id="backup-done" hidden>
+                Done. The zip is in your browser's Downloads folder. Now copy it somewhere safe.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>What's in it</h2>
+            <ul>
+                <li><span>All your contacts, meetings and labels (the database)</span></li>
+                <li><span>All the original pictures, exactly as you uploaded them</span></li>
+                <li><span>A short README with the date and how to restore it</span></li>
+            </ul>
+            <p class="hint">The small preview copies of the pictures are left out: the app makes them again by itself.</p>
+        </div>
+
+        <div class="card">
+            <h2>Where to keep it</h2>
+            <p>
+                The zip lands in your Downloads folder, on the same computer. If that computer breaks
+                or is lost, it would be lost with it. So <strong>copy it somewhere else</strong>:
+            </p>
+            <ul>
+                <li><span>A cloud drive (Google Drive, OneDrive)</span></li>
+                <li><span>A USB stick or an external disk</span></li>
+            </ul>
+            <p>
+                Don't upload it to GitHub: it contains private data about the people you know.
+            </p>
+        </div>
+    </div>
+</div>
+<script type="module" src="{{ url_for('static', filename='js/backup.js') }}"></script>
+{% endblock %}

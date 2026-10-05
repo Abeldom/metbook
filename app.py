@@ -3,13 +3,16 @@
 # Flask is a "web framework": a library that listens for requests from a
 # browser (like "give me the page at /") and lets us decide what to send back.
 
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-from database import (init_database, add_contact, get_all_contacts, delete_contact,
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, Response
+from database import (DATABASE_FILE, init_database, add_contact, get_all_contacts, delete_contact,
                       get_contact_by_id, update_contact, add_meeting, get_meetings,
                       update_meeting, delete_meeting, simplify,
                       get_all_labels, set_contact_labels,
                       add_meeting_photos, delete_meeting_photos, set_meeting_labels)
 import os
+import sqlite3
+import tempfile
+import zipfile
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageOps   # Pillow: opens and resizes pictures
@@ -258,6 +261,117 @@ def home():
 @app.route("/about")
 def about():
     return render_template("about.html")
+
+
+# --- Backup -------------------------------------------------------------------
+# A backup is a zip file with everything you can't get back: the database (contacts,
+# meetings, labels) and the ORIGINAL pictures. The small copies in uploads/thumbs are
+# left out: the app makes them again whenever they're needed.
+# The app doesn't keep the zip anywhere: your browser saves it in your Downloads folder,
+# and you copy it somewhere safe (a cloud drive, a USB stick).
+
+# A small text file that remembers when the last backup was made. It's not in git.
+LAST_BACKUP_FILE = "last_backup.txt"
+
+# Where the zip is built before it's sent: a folder inside the computer's temp folder
+BACKUP_TEMP_FOLDER = os.path.join(tempfile.gettempdir(), "metbook-backups")
+
+
+def read_last_backup():
+    """When the last backup was downloaded (a datetime), or None if there never was one."""
+    try:
+        with open(LAST_BACKUP_FILE, encoding="utf-8") as file:
+            return datetime.fromisoformat(file.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def make_backup_zip():
+    """
+    Build the backup zip in a temporary file and return its path.
+    (A temporary file, not memory: a library of photos can grow big.)
+    """
+    now = datetime.now()
+
+    # The temporary files live in their own folder. A zip is deleted right after it has been
+    # sent (see backup_download), but as a safety net, old leftovers (more than an hour old,
+    # e.g. if the browser stopped the download halfway) are swept away here.
+    os.makedirs(BACKUP_TEMP_FOLDER, exist_ok=True)
+    for old in os.listdir(BACKUP_TEMP_FOLDER):
+        old_path = os.path.join(BACKUP_TEMP_FOLDER, old)
+        if os.path.isfile(old_path) and now.timestamp() - os.path.getmtime(old_path) > 3600:
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass   # still in use: the next backup will try again
+
+    tmp_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False, dir=BACKUP_TEMP_FOLDER)
+    tmp_db.close()
+    try:
+        # sqlite's own backup() makes a consistent copy of the database, even if the app
+        # is saving something at that very moment. Copying the file directly could catch
+        # it half-written.
+        source = sqlite3.connect(DATABASE_FILE)
+        copy = sqlite3.connect(tmp_db.name)
+        source.backup(copy)
+        contact_count = copy.execute("SELECT COUNT(*) FROM contacts").fetchone()[0]
+        source.close()
+        copy.close()
+
+        zip_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False, dir=BACKUP_TEMP_FOLDER)
+        zip_file.close()
+        picture_count = 0
+        with zipfile.ZipFile(zip_file.name, "w") as backup:
+            backup.write(tmp_db.name, "contacts.db", compress_type=zipfile.ZIP_DEFLATED)
+            for name in sorted(os.listdir(UPLOAD_FOLDER)):
+                path = os.path.join(UPLOAD_FOLDER, name)
+                if os.path.isfile(path):   # files only: this skips the "thumbs" folder
+                    # Pictures are already compressed: ZIP_STORED just stores them, quicker
+                    backup.write(path, f"uploads/{name}", compress_type=zipfile.ZIP_STORED)
+                    picture_count += 1
+            backup.writestr("README.txt", (
+                f"Metbook backup, made on {now:%Y-%m-%d %H:%M}\n"
+                f"{contact_count} contacts, {picture_count} original pictures.\n\n"
+                "To restore: close the app, then put contacts.db and the uploads folder\n"
+                "from this zip into the Metbook project folder (replacing the old ones),\n"
+                "and start the app again.\n"))
+        return zip_file.name, now
+    finally:
+        os.remove(tmp_db.name)
+
+
+@app.route("/backup")
+def backup_page():
+    last = read_last_backup()
+    days_ago = (datetime.now() - last).days if last else None
+    return render_template("backup.html", last_backup=last, days_ago=days_ago)
+
+
+@app.route("/backup/download", methods=["POST"])
+def backup_download():
+    path, now = make_backup_zip()
+    with open(LAST_BACKUP_FILE, "w", encoding="utf-8") as file:
+        file.write(now.isoformat(timespec="seconds"))
+    # Send the zip piece by piece (a generator: a function that "yields" one piece at a time),
+    # and delete the temporary file as soon as the last piece is sent, or when the browser
+    # stops the download. "finally" runs in both cases.
+    def pieces():
+        try:
+            with open(path, "rb") as file:
+                while chunk := file.read(256 * 1024):
+                    yield chunk
+        finally:
+            try:
+                os.remove(path)
+            except OSError:
+                pass   # the sweep in make_backup_zip() will clean it up later
+
+    filename = f"metbook-backup-{now:%Y-%m-%d-%H%M}.zip"
+    return Response(pieces(), mimetype="application/zip", headers={
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "Content-Length": str(os.path.getsize(path)),   # so the browser can show its progress
+        "Cache-Control": "no-store",
+    })
 
 @app.route("/people")
 def people():

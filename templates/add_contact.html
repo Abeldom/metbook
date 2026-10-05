@@ -30,6 +30,13 @@
             <span class="hint">PNG, JPG, GIF, or WebP • or copy a picture and press Ctrl+V</span>
         </div>
 
+        {# Notes come right after the picture: they are the main thing you write about a person.
+           The short fields (labels, date) follow. #}
+        <div class="field">
+            <label for="notes">Notes</label>
+            <textarea class="input" id="notes" name="notes" placeholder="e.g., Met at the coffee shop. Likes hiking.">{{ request.form.get('notes', '') }}</textarea>
+        </div>
+
         {% include "_label_picker.html" %}
 
         <div class="field">
@@ -38,11 +45,6 @@
             <input class="input" type="text" id="date_met" name="date_met" placeholder="e.g., 2026, 2026-09, 2026-09-22"
                    value="{{ request.form.get('date_met', '') }}" data-date-picker>
             <span class="hint">Type just the year, the year and month, or the full date, or tap the calendar to choose a day. It becomes the first meeting on their timeline.</span>
-        </div>
-
-        <div class="field">
-            <label for="notes">Notes</label>
-            <textarea class="input" id="notes" name="notes" placeholder="e.g., Met at the coffee shop. Likes hiking.">{{ request.form.get('notes', '') }}</textarea>
         </div>
 
         <div class="form-actions">

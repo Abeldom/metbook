@@ -47,12 +47,13 @@
             </span>
         </div>
 
-        {% include "_label_picker.html" %}
-
+        {# Notes right after the picture, then the labels (same order as "Add a New Contact") #}
         <div class="field">
             <label for="notes">Notes</label>
             <textarea class="input" id="notes" name="notes">{{ request.form.get('notes', contact.notes or '') }}</textarea>
         </div>
+
+        {% include "_label_picker.html" %}
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save Changes</button>
