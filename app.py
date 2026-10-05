@@ -141,6 +141,10 @@ PAGE_SIZE = 50
 CARD_PARTS = {"labels": "Labels", "notes": "Notes", "firstmet": "First met"}
 DEFAULT_CARD_PARTS = {"labels", "notes"}
 
+# The places the search box can look in: {code name: what the switch says}.
+# "events" = the notes and labels of the meetings. All are on until you choose otherwise.
+SEARCH_SCOPES = {"name": "Names", "notes": "Notes", "events": "Events", "labels": "Labels"}
+
 
 # Each label always gets the same color: its id picks one from this list.
 # % is "remainder": 7 % 3 = 1, so label 7 gets the color at position 1.
@@ -219,6 +223,15 @@ def people():
     # ?match=all: people with ALL the chosen labels. Otherwise: with ANY of them.
     match = "all" if request.args.get("match") == "all" else "any"
 
+    # Where to search: ?in=name&in=notes (what the form sends without JavaScript), or the
+    # choice saved in the "search_in" cookie ("name.notes", written by people-search.js),
+    # or everywhere. & keeps only places we know.
+    wanted_scopes = set(request.args.getlist("in")) & set(SEARCH_SCOPES)
+    if not wanted_scopes:
+        saved_scopes = request.cookies.get("search_in", "")
+        wanted_scopes = set(saved_scopes.split(".")) & set(SEARCH_SCOPES)
+    search_scopes = wanted_scopes or set(SEARCH_SCOPES)
+
     # The label filter leaves out the other contacts completely.
     # The search only HIDES cards: that way, while you type,
     # static/js/people-search.js can show and hide them instantly.
@@ -228,7 +241,8 @@ def people():
     # first. {...} with "for" makes a "set": a bag of ids, quick to check.
     matching_ids = None
     if search:
-        matches = get_all_contacts(sort_by=sort_by, search=search, label_ids=label_ids, match=match)
+        matches = get_all_contacts(sort_by=sort_by, search=search, label_ids=label_ids, match=match,
+                                   scopes=search_scopes)
         matching_ids = {c["id"] for c in matches}
 
     # Only the first PAGE_SIZE matching cards are shown; "Show more" adds
@@ -249,12 +263,19 @@ def people():
     # kept in a cookie: a small piece of text the browser stores for this site
     # and sends back with every request. static/js/people-view.js writes it.
     # None = never chosen yet, so we use the default.
+    # Two cookies:
+    #  - "people_view": Labels and First met, kept for a year.
+    #  - "people_notes_now": Notes only. A "session cookie": it lasts until the browser is
+    #    closed. So Notes start ticked again on every new visit, and can be changed from there.
     saved_view = request.cookies.get("people_view")
     if saved_view is None:
-        saved_parts = DEFAULT_CARD_PARTS
+        saved_parts = DEFAULT_CARD_PARTS - {"notes"}
     else:
-        # "labels.notes" -> {"labels", "notes"}; & keeps only names we know
-        saved_parts = set(saved_view.split(".")) & set(CARD_PARTS)
+        # "labels.firstmet" -> {"labels", "firstmet"}; & keeps only names we know.
+        # - {"notes"}: an older cookie may still say "notes"; that is ignored.
+        saved_parts = (set(saved_view.split(".")) & set(CARD_PARTS)) - {"notes"}
+    if request.cookies.get("people_notes_now") != "0":   # "0" = you switched Notes off this visit
+        saved_parts = saved_parts | {"notes"}
 
     # Sorted by "first met"? Then the dates are always shown, so you can see
     # why the cards are in this order. | joins two sets: saved_parts + firstmet.
@@ -268,6 +289,7 @@ def people():
                            label_ids=label_ids, match=match,
                            card_parts=CARD_PARTS, shown_parts=shown_parts,
                            saved_parts=saved_parts, forced_parts=forced_parts,
+                           search_scope_options=SEARCH_SCOPES, search_scopes=search_scopes,
                            limit=limit, page_size=PAGE_SIZE, remaining=remaining)
 
 

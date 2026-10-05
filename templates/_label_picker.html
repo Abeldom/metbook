@@ -9,6 +9,11 @@
    Clicking the <label> ticks its checkbox; the CSS colors the span when it's ticked. #}
 <fieldset class="field label-picker">
     <legend>Labels (optional)</legend>
+    {# First the box for typing new labels with its little hint, then the existing labels to tap #}
+    <input class="input" type="text" name="new_labels" aria-label="New labels"
+           placeholder="{{ 'New labels, e.g. ' if all_labels else 'e.g. ' }}family, work, camp"
+           value="{{ new_labels_value if new_labels_value is defined else request.form.get('new_labels', '') }}">
+    <span class="hint">{% if all_labels %}Type new labels, separated by commas, or tap an existing label to pick it.{% else %}Type one or more labels, separated by commas.{% endif %}</span>
     {% if all_labels %}
     <div class="label-options">
         {% for label in all_labels %}
@@ -19,8 +24,4 @@
         {% endfor %}
     </div>
     {% endif %}
-    <input class="input" type="text" name="new_labels" aria-label="New labels"
-           placeholder="{{ 'New labels, e.g. ' if all_labels else 'e.g. ' }}family, work, camp"
-           value="{{ new_labels_value if new_labels_value is defined else request.form.get('new_labels', '') }}">
-    <span class="hint">{% if all_labels %}Tap a label to pick it, or type new ones{% else %}Type one or more labels{% endif %}, separated by commas.</span>
 </fieldset>

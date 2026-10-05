@@ -15,15 +15,20 @@ function isChosen(box) {
 }
 
 function saveChoice() {
-  // The code names of the switches that are on, joined with dots: "labels.notes"
-  const shown = [...switches].filter(isChosen).map((box) => box.value);
+  // The code names of the switches that are on, e.g. "labels.firstmet" (Notes is kept apart)
+  const chosen = [...switches].filter(isChosen).map((box) => box.value);
+  const others = chosen.filter((name) => name !== "notes");
 
   // A cookie is a small piece of text the browser keeps for this site and
   // sends back to the server with every request.
   //   path=/                 -> for every page of the site
   //   max-age=31536000       -> keep it for one year (in seconds)
   //   SameSite=Lax           -> don't send it along when other sites link here in the background
-  document.cookie = `people_view=${shown.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
+  document.cookie = `people_view=${others.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
+
+  // Notes get a "session cookie" (no max-age): it is forgotten when the browser is closed,
+  // so Notes start ticked again the next time you open the app. "1" = on, "0" = off.
+  document.cookie = `people_notes_now=${chosen.includes("notes") ? 1 : 0}; path=/; SameSite=Lax`;
 }
 
 for (const box of switches) {

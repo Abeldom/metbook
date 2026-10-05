@@ -11,7 +11,10 @@
 const form = document.querySelector(".search");
 const input = form.querySelector('input[name="q"]');
 const clearButton = form.querySelector(".search-clear");
-const cards = document.querySelectorAll(".person[data-search]");
+// Every real card has data-name (the "Add someone" card doesn't)
+const cards = document.querySelectorAll(".person[data-name]");
+// The "Search in:" switches: Names / Notes / Events / Labels
+const scopeBoxes = [...document.querySelectorAll(".scope-option input")];
 // The "3 people found" line under the search box
 const result = document.querySelector(".search-result");
 const resultCount = document.querySelector(".search-result-count");
@@ -50,16 +53,24 @@ function withParam(address, name, value) {
   return url;
 }
 
+// The places to search in, e.g. ["name", "notes"]: the ticked "Search in:" switches
+function chosenScopes() {
+  return scopeBoxes.filter((box) => box.checked).map((box) => box.value);
+}
+
 // Show or hide the cards to match what's in the search box (and the limit)
 function update() {
   const query = input.value.trim();
   const wanted = simplify(query);
+  const scopes = chosenScopes();
 
   // matching = how many cards match the search so far
   let matching = 0;
   for (const card of cards) {
-    // card.dataset.search reads the data-search="..." attribute from the HTML
-    const matches = card.dataset.search.includes(wanted);
+    // card.dataset.name reads the data-name="..." attribute from the HTML (data-notes,
+    // data-events and data-labels work the same way). The card matches when the text is
+    // in ANY of the chosen places. (An empty search matches everyone.)
+    const matches = scopes.some((scope) => card.dataset[scope].includes(wanted));
     if (matches) {
       matching = matching + 1;
     }
@@ -101,6 +112,31 @@ input.addEventListener("input", () => {
   update();
 });
 
+// Switching a "Search in:" place on or off searches again at once.
+// The last one can't be switched off (searching nowhere makes no sense):
+// it is locked until you switch another one on.
+function saveScopes() {
+  const on = chosenScopes();
+  for (const box of scopeBoxes) {
+    box.disabled = on.length === 1 && box.checked;
+  }
+  // Remember the choice in a cookie ("name.notes"), so the page opens like this next time
+  document.cookie = `search_in=${on.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
+}
+
+for (const box of scopeBoxes) {
+  box.addEventListener("change", () => {
+    saveScopes();
+    limit = pageSize;
+    update();
+  });
+}
+// A locked checkbox isn't sent with a form, but the form doesn't send anything while the
+// script runs (see "submit" below), so that doesn't matter.
+for (const box of scopeBoxes) {
+  box.disabled = chosenScopes().length === 1 && box.checked;
+}
+
 // "Show more" is a normal link (it works without JavaScript too), but here
 // we show the next cards right away instead of loading the page again
 moreButton.addEventListener("click", (event) => {
@@ -131,21 +167,25 @@ form.classList.add("is-live");
 
 // When you open a person, remember exactly how this page looks, so the
 // "Back to Contacts" link on their page can bring you back to it
-// (static/js/back-to-people.js reads it).
+// (static/js/return-to-people.js reads it).
 // The address already holds everything: sort, label, search text and ?limit.
-// We add "#person-79" so the browser scrolls back to the card you opened.
+// We don't add "#person-79" to it: that would show a number in the address bar and
+// mark the card. The scroll position (saved below) brings you back to the same spot.
 // sessionStorage = a small notebook the browser keeps for this tab only;
 // it's forgotten when the tab is closed.
 grid.addEventListener("click", (event) => {
   // closest(): the card that was clicked (the click may land on its picture or name)
-  const card = event.target.closest(".person[data-search]");
+  const card = event.target.closest(".person[data-name]");
   if (!card) {
     return;
   }
   const address = new URL(location.href);
-  address.hash = card.id;
+  address.hash = "";
   try {
     sessionStorage.setItem("peopleReturn", address.pathname + address.search + address.hash);
+    // And how far down the page you were, so you come back to exactly the same spot
+    // (return-to-people.js and keep-scroll.js use it)
+    sessionStorage.setItem("peopleReturnScroll", String(Math.round(window.scrollY)));
   } catch (error) {
     // Some browsers block storage (e.g. strict private mode); then "Back" just opens /people
   }

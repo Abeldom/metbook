@@ -2,10 +2,10 @@
  * organic.css holds the tokens (colors, fonts, spacing, radii) and base components
  * (.btn, .card, .input, .tag, .seg). This file only lays out the app's pages. */
 
-/* Fraunces (heavy, soft): only for people's names, on the People cards and at the
-   top of a person's page (see .person-name, .detail h1).
-   The design system's heading font, Caprasimo, has no ő ű Ő Ű, which are common
-   in Hungarian names; Fraunces has them, and looks close to Caprasimo.
+/* Fraunces (heavy, soft) is the heading font of the whole app (--font-heading in
+   organic.css), so the app has only two fonts: Fraunces and Figtree.
+   It was chosen over the design system's Caprasimo, which has no ő ű Ő Ű,
+   common in Hungarian names.
    In the link: opsz 9..144 (the "optical size" follows the text size), wght 800
    (heavy), SOFT 100 (the softest, roundest shapes).
    (Loaded by a <link> in templates/base.html: faster than @import.) */
@@ -35,12 +35,14 @@ a:hover { color: var(--color-accent-600); }
 }
 .brand-name { font-family: var(--font-heading); font-size: 22px; line-height: 1.1; }
 .brand-sub { font-size: 12px; color: var(--color-neutral-700); }
-.site-nav { display: flex; gap: 4px; }
+/* The menu: bigger and bolder than before, and the page you're on is filled with the
+   same dark brown as the chosen buttons, so it stands out */
+.site-nav { display: flex; gap: 6px; }
 .site-nav a {
-  padding: 8px 14px; border-radius: 999px; font-size: 14px; color: var(--color-text);
+  padding: 10px 20px; border-radius: 999px; font-size: 17px; font-weight: 600; color: var(--color-text);
 }
 .site-nav a:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
-.site-nav a[aria-current="page"] { background: var(--color-accent-200); color: var(--color-accent-800); }
+.site-nav a[aria-current="page"] { background: var(--color-accent-700); color: var(--color-neutral-100); }
 
 main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20px 48px; }
 .narrow { max-width: 620px; }
@@ -128,8 +130,13 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   .search.is-live .search-submit,
   .js .search.live-search .search-submit { display: none; }
 }
+/* All the button rows on the People page (Search in, Filter by label, Sort by, Show) are
+   the same size: 36px high, 14px text. The .seg frame has a 1px border above and below,
+   so the buttons inside are 34px. */
+/* The frame of the A-Z / First met buttons (and Any / All) is white too, like the other buttons */
+.seg { background: var(--color-neutral-100); }
 .seg a {
-  display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; min-height: 34px;
   font-size: 14px; color: var(--color-text); white-space: nowrap;
 }
 .seg a + a { border-left: 1px solid var(--color-divider); }
@@ -164,11 +171,10 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .person:hover { color: var(--color-text); box-shadow: var(--shadow-md); transform: translateY(-3px); }
-/* :target = the card whose id is in the address (#person-79): the person you just
-   came back from gets a soft ring, so you see where you were.
+/* The card whose id is in the address (#person-79) is where the page scrolls to when you
+   come back from a person. It is only scrolled to, not highlighted.
    scroll-margin-top: a little room above the card when the browser scrolls to it. */
 .person { scroll-margin-top: 24px; }
-.person:target { box-shadow: 0 0 0 3px var(--color-accent-400), var(--shadow-md); }
 /* People's names (on the cards, and at the top of a person's page) use Fraunces.
    font-variation-settings picks a spot on the font's "SOFT" slider (0-100). */
 .person-name, .detail h1 {
@@ -210,20 +216,26 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 }
 .fact-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--color-neutral-700); }
 .fact-value { font-size: 16px; line-height: 1.6; margin: 2px 0 0; }
-.delete-form { width: 100%; margin-top: 20px; }
+/* The Delete button under a contact: small, on the right (flex-end = the end of the row) */
+.delete-form { display: flex; justify-content: flex-end; width: 100%; margin-top: 20px; }
+.delete-form .btn { padding: 6px 14px; font-size: 13px; min-height: 32px; gap: 6px; }
 .detail-sub { margin: 0; font-size: 14px; color: var(--color-neutral-700); }
 
 /* — meetings timeline — */
 .timeline-card { margin-top: 20px; gap: 16px; }
 .timeline-card h2 { margin: 0; }
 
-.add-meeting summary {
-  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-  list-style: none; font-weight: 600; color: var(--color-accent-700);
-}
+/* "+ Add a meeting" is a real button, the same look as "Add New Contact" on the People page
+   (the classes "btn btn-primary" are on the <summary> in contact_detail.html).
+   list-style: none removes the little triangle of <details>. */
+.add-meeting summary { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; }
 .add-meeting summary::-webkit-details-marker { display: none; }
-.add-meeting summary:hover { color: var(--color-accent-600); }
-.add-meeting[open] summary { margin-bottom: 16px; }
+/* While the form is open, the button calms down (outline only), so the form stands out */
+.add-meeting[open] summary {
+  margin-bottom: 16px; background: transparent;
+  border: 1px solid var(--color-accent-700); color: var(--color-accent-800);
+}
+.add-meeting[open] summary:hover { background: var(--color-accent-100); }
 .meeting-form { display: grid; gap: 16px; }
 .meeting-form .btn { justify-self: start; }
 
@@ -331,34 +343,50 @@ input[type="file"]::file-selector-button {
    we remove its default border and padding. */
 .label-picker { border: 0; margin: 0; padding: 0; min-width: 0; }
 .label-picker legend { padding: 0; margin-bottom: 6px; font-size: 14px; font-weight: 600; }
-.label-options { display: flex; flex-wrap: wrap; gap: 8px; }
+/* With more than two rows of labels the list stays two rows high and scrolls up and down
+   (2 rows of 36px buttons + 1 gap of 8px = 80px, + 2 x 2px padding = 84px).
+   padding: 2px gives the focus outline room, because overflow cuts off whatever sticks out.
+   overscroll-behavior: contain = when you reach the end of the list, the page behind
+   doesn't start to scroll. */
+.label-options {
+  display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;
+  max-height: 84px; overflow-y: auto; padding: 2px; overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
 /* Pill-shaped checkboxes. Used by the label picker (.label-option) and by the
    "Show:" switches on the People page (.view-option): one look for both. */
-.label-option, .view-option { cursor: pointer; }
+.label-option, .view-option, .scope-option { cursor: pointer; }
 /* The real checkbox is invisible but still there, so the keyboard and screen
    readers can use it. The <span> next to it is what you see. */
-.label-option input, .view-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.label-option span, .view-option span {
+.label-option input, .view-option input, .scope-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.label-option span, .view-option span, .scope-option span {
   display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px;
   border-radius: 999px; border: 1px solid var(--color-divider);
   background: var(--color-neutral-100); font-size: 14px;
 }
-.label-option:hover span, .view-option:hover span { border-color: var(--color-accent-500); }
-/* "input:checked + span" = the span right after a ticked checkbox */
-.label-option input:checked + span, .view-option input:checked + span {
+.label-option:hover span, .view-option:hover span, .scope-option:hover span { border-color: var(--color-accent-500); }
+/* "input:checked + span" = the span right after a ticked checkbox.
+   A chosen button is filled with the darker brown. */
+.label-option input:checked + span, .view-option input:checked + span, .scope-option input:checked + span {
   background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-neutral-100);
 }
-/* The ✓ is only for the "Show:" switches; a chosen label is shown by its fill color only */
-.view-option input:checked + span::before { content: "✓"; }
-.label-option input:focus-visible + span, .view-option input:focus-visible + span {
+/* No ✓ on any of the buttons: a chosen one is shown by its fill color only */
+.label-option input:focus-visible + span, .view-option input:focus-visible + span, .scope-option input:focus-visible + span {
   outline: 2px solid var(--color-accent); outline-offset: 2px;
 }
 
 /* — "Show:" switches on the People page — */
 /* margin-right: auto pushes the "Add New Contact" button to the far right */
 .view-options { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-right: auto; }
-.view-options-title, .label-filter-title { font-size: 14px; color: var(--color-neutral-700); margin-right: 2px; }
-.view-option span { min-height: 32px; padding: 4px 12px; font-size: 13px; }
+/* "Sort by:" and the A-Z / First met buttons side by side */
+.sort-options { display: flex; align-items: center; gap: 8px; }
+.view-options-title, .label-filter-title { white-space: nowrap; font-size: 14px; color: var(--color-neutral-700); margin-right: 2px; }
+.view-option span, .scope-option span { min-height: 36px; padding: 6px 14px; font-size: 14px; }
+/* The "Search in:" row under the search box. A switch that's locked because it's the last
+   one on (see people-search.js) stays filled, and is only a little faded. */
+.scope-options { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.scope-option:has(input:disabled) { cursor: default; }
+.scope-option input:disabled + span { opacity: .85; }
 /* A locked switch (e.g. First met while sorting by first met): ticked, a bit faded */
 .view-option:has(input:disabled) { cursor: default; }
 .view-option input:disabled + span { opacity: .6; }
@@ -367,11 +395,84 @@ input[type="file"]::file-selector-button {
 .people-grid.hide-notes .person-notes,
 .people-grid.hide-firstmet .person-date { display: none; }
 
+/* A date box with a calendar button next to it (date-picker.js).
+   position: relative: the hidden calendar sits in the corner, so its pop-up opens right here. */
+.date-input { position: relative; display: flex; gap: 8px; align-items: center; }
+.date-input .input { flex: 1; min-width: 0; }
+.date-button { flex: none; width: 44px; height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+/* The mini calendar that opens under the date box. position: absolute = it floats over
+   the page instead of pushing everything down. */
+.calendar {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
+  width: min(320px, 100%); padding: 12px;
+  background: var(--color-surface); border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(60, 40, 20, .18);
+}
+.calendar[hidden] { display: none; }
+.calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+.calendar-title { flex: 1; font-weight: 700; font-size: 15px; }
+.calendar button {
+  font: inherit; color: var(--color-text); background: transparent; border: 0;
+  border-radius: 999px; cursor: pointer; min-height: 36px;
+}
+.calendar button:hover:not(:disabled) { background: var(--color-accent-100); color: var(--color-accent-800); }
+.calendar button:disabled { cursor: default; }
+.calendar-nav { width: 36px; font-size: 20px; line-height: 1; }
+/* 7 columns for the days of the week; the months and years use 3 */
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.calendar-wide { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.calendar-weekday { font-size: 12px; color: var(--color-neutral-700); padding: 4px 0; }
+.calendar-cell { font-size: 14px; }
+.calendar-cell.is-today { border: 1px solid var(--color-accent-500); }
+.calendar .calendar-cell[aria-current="true"] { background: var(--color-accent-700); color: var(--color-neutral-100); }
+/* The button under the days / months: choose without a day or without a month */
+.calendar-use {
+  display: block; width: 100%; margin-top: 10px; font-size: 13px;
+  border: 1px solid var(--color-divider) !important;
+}
+
+/* The "back to top" button (to-top.js): fixed = it stays in the corner of the screen while
+   you scroll. Invisible and not clickable until the script adds "is-visible". */
+.to-top {
+  position: fixed; right: 16px; bottom: 16px; z-index: 40;
+  width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  background: var(--color-accent-700); color: var(--color-neutral-100);
+  box-shadow: var(--shadow-md);
+  opacity: 0; visibility: hidden; transform: translateY(8px);
+  transition: opacity .2s, transform .2s, visibility .2s;
+}
+.to-top.is-visible { opacity: 1; visibility: visible; transform: none; }
+.to-top:hover { background: var(--color-accent-800); }
+.to-top:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+
 /* The filter row on the People page */
-.label-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.label-filter { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 14px; }
+/* "Filter by label:" and the label buttons side by side. The buttons are 36px high, so the
+   title gets a line-height of 36px, to sit level with the first row of buttons. */
+.label-filter-row { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
+.label-filter-row .label-filter-title { line-height: 40px; }   /* 36px + the 2px padding of the list */
+/* With more than two rows of labels, the list stays two rows high and scrolls
+   (the same as the label picker on the forms). */
+.label-chips {
+  display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; flex: 1; min-width: 0;
+  max-height: 84px; overflow-y: auto; padding: 2px; overscroll-behavior: contain; scrollbar-width: thin;
+}
+/* The row under the label list: "Any of these | All of these" and "Clear labels" */
+.label-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* "Clear labels" is a white pill like the other label buttons (from .label-filter a), but not
+   filled, and a little quieter */
+.label-filter .label-clear { color: var(--color-neutral-700); }
+.label-filter .label-clear:hover { color: var(--color-accent-800); }
+/* On a narrow phone the title gets its own line above the buttons */
+@media (max-width: 600px) {
+  .label-filter-row { flex-direction: column; gap: 2px; }
+  .label-filter-row .label-filter-title { line-height: 1.4; }
+}
 .label-filter a {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; min-height: 36px;
   border-radius: 999px; border: 1px solid var(--color-divider);
+  background: var(--color-neutral-100);   /* the same white as the "Search in" and "Show" buttons */
   font-size: 14px; color: var(--color-text);
 }
 .label-filter a:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
@@ -381,5 +482,8 @@ input[type="file"]::file-selector-button {
 .label-filter-count { font-size: 12px; opacity: .75; }
 /* A chosen label is shown by its fill color only: adding a ✓ would make it wider */
 /* "Any of these | All of these": the same size as the label pills next to it */
-.label-match a { padding: 6px 14px; font-size: 13px; }
+/* (.label-filter a above also styles these as pills; inside the frame they must be plain,
+   34px high, so the whole frame is 36px like everything else) */
+.label-filter .label-match a { padding: 0 16px; min-height: 34px; font-size: 14px; border: 0; border-radius: 0; }
+.label-filter .label-match a + a { border-left: 1px solid var(--color-divider); }
 .form-actions .btn { flex: 1 1 160px; }

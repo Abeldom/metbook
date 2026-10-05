@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="narrow" style="margin:0 auto">
-    {# back-to-people.js changes this link into the People page exactly as you left it #}
+    {# return-to-people.js (loaded by base.html) changes this link into the People page exactly as you left it #}
     <a class="back-link back-to-people" href="{{ url_for('people') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Back to Contacts</a>
 
     <div class="card detail">
@@ -56,7 +56,7 @@
         {# <details> is a built-in HTML toggle: the form stays folded until you click "Add a meeting".
            If the last try had an error, we open it so you can see what went wrong. #}
         <details class="add-meeting" {% if error %}open{% endif %}>
-            <summary><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add a meeting</summary>
+            <summary class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add a meeting</summary>
 
             {% if error %}
             <div class="error" role="alert">
@@ -71,9 +71,10 @@
                 <div class="field">
                     <label for="meeting-date">Date</label>
                     {# Only refill this form after a failed "add" (error), not after a failed edit #}
+                    {# data-date-picker: date-picker.js adds a calendar button next to the box #}
                     <input class="input" type="text" id="meeting-date" name="date" placeholder="2026-09-22"
-                           value="{{ request.form.get('date', '') if error }}" required>
-                    <span class="hint">A year (2026), a month (2026-09), or a full date (2026-09-22)</span>
+                           value="{{ request.form.get('date', '') if error }}" required data-date-picker>
+                    <span class="hint">Type a year (2026), a month (2026-09) or a full date (2026-09-22), or tap the calendar to choose a day</span>
                 </div>
                 <div class="field">
                     <label for="meeting-notes">Notes (optional)</label>
@@ -114,8 +115,8 @@
                     <div class="field">
                         <label for="edit-date">Date</label>
                         <input class="input" type="text" id="edit-date" name="date"
-                               value="{{ request.form.get('date', meeting.date) }}" required autofocus>
-                        <span class="hint">A year (2026), a month (2026-09), or a full date (2026-09-22)</span>
+                               value="{{ request.form.get('date', meeting.date) }}" required autofocus data-date-picker>
+                        <span class="hint">Type a year (2026), a month (2026-09) or a full date (2026-09-22), or tap the calendar to choose a day</span>
                     </div>
                     <div class="field">
                         <label for="edit-notes">Notes (optional)</label>
@@ -203,8 +204,8 @@
     {# tojson turns the name into a safe JavaScript string, so names like O'Brien don't break the confirm box #}
     <form class="delete-form" method="POST" action="{{ url_for('delete_contact_page', contact_id=contact.id) }}"
           onsubmit='return confirm("Delete " + {{ contact.name|tojson }} + " and all their meetings permanently?");'>
-        <button type="submit" class="btn btn-danger" style="width:100%"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Delete Contact</button>
+        <button type="submit" class="btn btn-danger"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Delete Contact</button>
     </form>
 </div>
-<script type="module" src="{{ url_for('static', filename='js/back-to-people.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/date-picker.js') }}"></script>
 {% endblock %}

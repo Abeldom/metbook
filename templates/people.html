@@ -31,7 +31,7 @@
        1. While you type, static/js/people-search.js hides the cards that don't match (instant).
        2. Without JavaScript, pressing Enter sends the form: method="GET" puts the text
           into the URL (/people?q=anna&sort=name) and the server hides the others. #}
-    <form class="search{% if contacts %} live-search{% endif %}" method="GET" action="{{ url_for('people') }}" role="search">
+    <form id="people-search" class="search{% if contacts %} live-search{% endif %}" method="GET" action="{{ url_for('people') }}" role="search">
         <div class="search-field">
             <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
             <input class="input" type="search" name="q" value="{{ search }}" autocomplete="off"
@@ -47,6 +47,23 @@
         <button class="btn btn-secondary search-submit" type="submit">Search</button>
     </form>
 
+    {# "Search in:" switches: where the search looks. They're checkboxes styled as pills
+       (like "Show:" below, but a different class, so people-view.js leaves them alone).
+       form="people-search" makes them part of the search form even though they sit
+       outside it, so without JavaScript they're sent too (?in=name&in=notes).
+       At least one stays on: people-search.js doesn't let you switch off the last one.
+       The choice is saved in a cookie by the script. #}
+    <div class="scope-options" role="group" aria-label="Where to search">
+        <span class="view-options-title">Search in:</span>
+        {% for scope, title in search_scope_options.items() %}
+        <label class="scope-option">
+            <input type="checkbox" name="in" value="{{ scope }}" form="people-search"
+                   {% if scope in search_scopes %}checked{% endif %}>
+            <span>{{ title }}</span>
+        </label>
+        {% endfor %}
+    </div>
+
     {% if contacts %}
     {# "3 people found": right under the search box, only while searching (and not
        when nobody matches: then the "No one matches" box below says it).
@@ -58,16 +75,17 @@
     {% endif %}
 
     {# Label filter: one link per label. Tapping a label adds it to the chosen ones,
-       tapping a chosen one takes it out again; "Everyone" takes them all out.
+       tapping a chosen one takes it out again. With none chosen, everyone is shown.
        They're normal links: the page loads again with ?label=3&label=5 and the server
        leaves out everyone else.
        toggled = the labels you'd have after tapping this one:
          chosen already -> the list without it (reject)   |   not chosen -> the list plus it #}
     {% if all_labels %}
     <nav class="label-filter" aria-label="Filter by label">
+        <div class="label-filter-row">
         <span class="label-filter-title">Filter by label:</span>
-        {# "Everyone": no label filter at all (takes every chosen label out) #}
-        <a href="{{ url_for('people', sort=current_sort, q=search or none) }}" {% if not label_ids %}aria-current="true"{% endif %}>Everyone</a>
+        {# .label-chips: with more than two rows of labels it stays two rows high and scrolls #}
+        <div class="label-chips">
         {% for label in all_labels %}
         {% set chosen = label.id in label_ids %}
         {% set toggled = (label_ids|reject('equalto', label.id)|list) if chosen else (label_ids + [label.id]) %}
@@ -76,12 +94,24 @@
             {{ label.name }} <span class="label-filter-count">{{ label.contact_count }}</span>
         </a>
         {% endfor %}
+        </div>
+        </div>
 
-        {# With 2 or more labels chosen: combine them with "any" or "all" #}
-        {% if label_ids|length > 1 %}
-        <div class="seg label-match" role="group" aria-label="How to combine the chosen labels">
-            <a href="{{ url_for('people', sort=current_sort, q=search or none, label=label_ids, match='any') }}" {% if match == 'any' %}aria-current="true"{% endif %}>Any of these</a>
-            <a href="{{ url_for('people', sort=current_sort, q=search or none, label=label_ids, match='all') }}" {% if match == 'all' %}aria-current="true"{% endif %}>All of these</a>
+        {# Only while a label is chosen: the "Clear labels" button takes them all off at once
+           (no label in the address = everyone is shown). With 2 or more labels chosen you can
+           also combine them with "any" or "all". #}
+        {% if label_ids %}
+        <div class="label-filter-actions">
+            {% if label_ids|length > 1 %}
+            <div class="seg label-match" role="group" aria-label="How to combine the chosen labels">
+                <a href="{{ url_for('people', sort=current_sort, q=search or none, label=label_ids, match='any') }}" {% if match == 'any' %}aria-current="true"{% endif %}>Any of these</a>
+                <a href="{{ url_for('people', sort=current_sort, q=search or none, label=label_ids, match='all') }}" {% if match == 'all' %}aria-current="true"{% endif %}>All of these</a>
+            </div>
+            {% endif %}
+            <a class="label-clear" href="{{ url_for('people', sort=current_sort, q=search or none) }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                Clear labels
+            </a>
         </div>
         {% endif %}
     </nav>
@@ -90,9 +120,12 @@
     <div class="toolbar">
         {# q=search or none: keep the search when changing the sort order
            (url_for leaves out values that are None, so there's no empty ?q=) #}
+        <div class="sort-options">
+        <span class="view-options-title">Sort by:</span>
         <div class="seg" role="group" aria-label="Sort contacts">
             <a href="{{ url_for('people', sort='name', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'name' %}aria-current="true"{% endif %}>A–Z (Name)</a>
             <a href="{{ url_for('people', sort='firstmet', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'firstmet' %}aria-current="true"{% endif %}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> First met</a>
+        </div>
         </div>
 
         {# "Show:" switches. Each is a checkbox (styled as a pill, like the label picker);
@@ -131,12 +164,16 @@
         <div class="people-grid{% for part in card_parts if part not in shown_parts %} hide-{{ part }}{% endfor %}"
              data-limit="{{ limit }}" data-page-size="{{ page_size }}">
             {% for contact in contacts %}
-            {# data-search: everything this card can be found by (name, notes, meeting notes,
-               labels), already lowercased and without accents. The script compares against it.
+            {# data-name / data-notes / data-events / data-labels: the four places this card can be
+               found in, already lowercased and without accents. The script looks only in the
+               places chosen in "Search in:". "events" = notes and labels of the meetings.
                |select drops the empty ones, |join glues the rest with spaces. #}
-            {# id="person-79": "Back to Contacts" can scroll straight back to this card (#person-79) #}
+            {# id="person-79": every card has its own id #}
             <a class="person" id="person-{{ contact.id }}" href="{{ url_for('view_contact', contact_id=contact.id) }}"
-               data-search="{{ ([contact.name, contact.notes, contact.meeting_notes, contact.meeting_label_names] + contact.labels|map(attribute='name')|list)|select|join(' ')|simplify }}"
+               data-name="{{ contact.name|simplify }}"
+               data-notes="{{ contact.notes|simplify }}"
+               data-events="{{ [contact.meeting_notes, contact.meeting_label_names]|select|join(' ')|simplify }}"
+               data-labels="{{ contact.labels|map(attribute='name')|join(' ')|simplify }}"
                {% if not contact.visible %}hidden{% endif %}>
                 <div class="person-photo">
                     {% if contact.picture_path %}

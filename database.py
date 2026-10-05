@@ -160,7 +160,7 @@ def add_contact(name, notes="", picture_path=""):
     return contact_id
 
 
-def get_all_contacts(sort_by="name", search="", label_ids=(), match="any"):
+def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scopes=None):
     """
     Get all contacts from the database, or only the ones matching a search.
 
@@ -169,6 +169,10 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any"):
         search (str): Only return contacts whose name, notes, meeting notes
                       or labels contain this text (ignoring capitals and
                       accents). Empty = return everyone.
+        scopes (set): WHERE to search: any of "name" (the name), "notes" (the
+                      notes about the person), "events" (the notes and labels
+                      of their meetings), "labels" (the person's own labels).
+                      None = all four.
         label_ids (list): Only return contacts with these labels (on the person
                           or on one of their meetings). Empty = everyone.
         match (str): "any" = people with at least one of the labels,
@@ -210,23 +214,29 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any"):
         # matching label.
         # JOIN combines rows from two tables that belong together: each
         # contact_labels row with the labels row it points to.
-        conditions.append("""(
-            instr(simplify(contacts.name), ?) > 0
-            OR instr(simplify(contacts.notes), ?) > 0
-            OR EXISTS (SELECT 1 FROM meetings
-                       WHERE meetings.contact_id = contacts.id
-                         AND instr(simplify(meetings.notes), ?) > 0)
-            OR EXISTS (SELECT 1 FROM contact_labels
-                       JOIN labels ON labels.id = contact_labels.label_id
-                       WHERE contact_labels.contact_id = contacts.id
-                         AND instr(simplify(labels.name), ?) > 0)
-            OR EXISTS (SELECT 1 FROM meeting_labels
-                       JOIN labels ON labels.id = meeting_labels.label_id
-                       JOIN meetings ON meetings.id = meeting_labels.meeting_id
-                       WHERE meetings.contact_id = contacts.id
-                         AND instr(simplify(labels.name), ?) > 0)
-        )""")
-        params += [simplify(search)] * 5   # the same text for all five ?
+        # One piece of the condition for every place we may search in; each
+        # piece has the number of ? it needs. The pieces are glued with OR below.
+        # (An unknown scope name is simply ignored; nothing chosen = search everywhere.)
+        pieces = {
+            "name": ("instr(simplify(contacts.name), ?) > 0", 1),
+            "notes": ("instr(simplify(contacts.notes), ?) > 0", 1),
+            "events": ("""(EXISTS (SELECT 1 FROM meetings
+                                   WHERE meetings.contact_id = contacts.id
+                                     AND instr(simplify(meetings.notes), ?) > 0)
+                           OR EXISTS (SELECT 1 FROM meeting_labels
+                                      JOIN labels ON labels.id = meeting_labels.label_id
+                                      JOIN meetings ON meetings.id = meeting_labels.meeting_id
+                                      WHERE meetings.contact_id = contacts.id
+                                        AND instr(simplify(labels.name), ?) > 0))""", 2),
+            "labels": ("""EXISTS (SELECT 1 FROM contact_labels
+                                  JOIN labels ON labels.id = contact_labels.label_id
+                                  WHERE contact_labels.contact_id = contacts.id
+                                    AND instr(simplify(labels.name), ?) > 0)""", 1),
+        }
+        chosen = [name for name in pieces if scopes is None or name in scopes] or list(pieces)
+        conditions.append("(" + " OR ".join(pieces[name][0] for name in chosen) + ")")
+        for name in chosen:
+            params += [simplify(search)] * pieces[name][1]
 
     if label_ids:
         # "This contact has label ?": the person has the label themselves,

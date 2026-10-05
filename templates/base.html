@@ -16,7 +16,6 @@
          is drawn in the right font from the very first moment instead of switching
          from a plain font a moment later. (crossorigin is required for fonts, even
          from our own server.) -->
-    <link rel="preload" href="{{ url_for('static', filename='fonts/caprasimo-400-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ url_for('static', filename='fonts/figtree-400-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ url_for('static', filename='fonts/fraunces-800-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
@@ -49,5 +48,14 @@
     <footer class="site-footer">
         <p>&copy; 2026 Metbook. A learning project.</p>
     </footer>
+
+    {# "Back to top" button: static/js/to-top.js shows it after you scroll down #}
+    <button class="to-top" type="button" aria-label="Back to top" title="Back to top">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+    </button>
+    <script type="module" src="{{ url_for('static', filename='js/to-top.js') }}"></script>
+
+    {# Links back to the People list (menu, "Back to Contacts", "Cancel") return to the list as you left it #}
+    <script type="module" src="{{ url_for('static', filename='js/return-to-people.js') }}"></script>
 </body>
 </html>
