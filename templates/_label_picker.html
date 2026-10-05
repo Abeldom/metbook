@@ -1,0 +1,26 @@
+{# _label_picker.html - the "Labels" part of the add and edit contact forms.
+   Both forms pull it in with {% include "_label_picker.html" %}, so it's written only once.
+   (The _ at the start of the name means: a piece of a page, not a whole page.)
+   It needs all_labels and ticked_label_ids, which the route sends with **label_form_data().
+   The meeting forms set them with {% with ticked_label_ids=..., new_labels_value=... %},
+   because one page has two forms (add + edit), and each needs its own values.
+
+   Each label is a real checkbox, hidden and replaced by the pill-shaped <span> next to it.
+   Clicking the <label> ticks its checkbox; the CSS colors the span when it's ticked. #}
+<fieldset class="field label-picker">
+    <legend>Labels (optional)</legend>
+    {% if all_labels %}
+    <div class="label-options">
+        {% for label in all_labels %}
+        <label class="label-option">
+            <input type="checkbox" name="labels" value="{{ label.id }}" {% if label.id in ticked_label_ids %}checked{% endif %}>
+            <span>{{ label.name }}</span>
+        </label>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <input class="input" type="text" name="new_labels" aria-label="New labels"
+           placeholder="{{ 'New labels, e.g. ' if all_labels else 'e.g. ' }}family, work, camp"
+           value="{{ new_labels_value if new_labels_value is defined else request.form.get('new_labels', '') }}">
+    <span class="hint">{% if all_labels %}Tap a label to pick it, or type new ones{% else %}Type one or more labels{% endif %}, separated by commas.</span>
+</fieldset>

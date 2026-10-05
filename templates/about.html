@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}About - Metbook{% endblock %}
+
+{% block content %}
+<div class="narrow">
+    <h1 class="page-title">About Metbook</h1>
+    <p class="lede">
+        Metbook is a learning project created to understand web development,
+        databases, and how to build real applications.
+    </p>
+
+    <div class="stack" style="margin-top:28px">
+        <div class="card">
+            <h2>What We're Learning</h2>
+            <ul>
+                <li><span><strong>Python + Flask:</strong> Web framework for handling requests</span></li>
+                <li><span><strong>HTML/CSS:</strong> Building pages that work on all devices</span></li>
+                <li><span><strong>SQLite:</strong> Storing data that persists</span></li>
+                <li><span><strong>File uploads:</strong> Saving pictures</span></li>
+                <li><span><strong>Web design:</strong> Making it look good and work on phones</span></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>The Goal</h2>
+            <p>
+                Eventually, this will be accessible from your phone over WiFi,
+                and might even become a real app you can install on your home screen!
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,176 @@
+/* style.css - makes our app look good on phones and computers
+ *
+ * Responsive design: CSS that works on small screens (phones)
+ * and large screens (computers). We use percentages and "mobile first"
+ * (design for phone FIRST, then add bigger-screen tweaks).
+ */
+
+/* Variables: colors we use everywhere */
+:root {
+    --primary-color: #CC00CC;      /* indigo - main theme */
+    --secondary-color: #10b981;    /* green - success */
+    --danger-color: #ef4444;       /* red - delete, danger */
+    --light-gray: #f3f4f6;         /* light background */
+    --dark-gray: #1f2937;          /* dark text */
+    --border-color: #e5e7eb;       /* light border */
+}
+
+* {
+    /* box-sizing: border-box means padding doesn't add to the width */
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    /* system fonts load fast and look native on each device */
+    background-color: #ffffff;
+    color: var(--dark-gray);
+    line-height: 1.6;
+}
+
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+header p {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+main {
+    max-width: 600px;        /* don't let content get too wide */
+    margin: 0 auto;           /* center it */
+    padding: 20px;
+}
+
+.card {
+    background-color: var(--light-gray);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.card h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.card p {
+    margin-bottom: 10px;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Buttons: make them nice and touchable */
+button, .btn {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover, .btn:hover {
+    background-color: #4f46e5;  /* darker indigo */
+}
+
+button.secondary {
+    background-color: var(--secondary-color);
+}
+
+button.secondary:hover {
+    background-color: #059669;
+}
+
+button.danger {
+    background-color: var(--danger-color);
+}
+
+button.danger:hover {
+    background-color: #dc2626;
+}
+
+/* Navigation bar */
+nav {
+    background-color: white;
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px 20px;
+    display: flex;
+    gap: 20px;
+}
+
+nav a {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Form styling - for adding/editing contacts later */
+form {
+    display: flex;
+    flex-direction: column;  /* stack inputs vertically */
+}
+
+label {
+    margin-top: 15px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+input, textarea {
+    margin-top: 5px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 16px;
+    font-family: inherit;
+}
+
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+form button {
+    margin-top: 20px;
+}
+
+/* Mobile first: on screens 600px+ */
+@media (min-width: 600px) {
+    main {
+        padding: 40px;
+    }
+
+    header h1 {
+        font-size: 36px;
+    }
+}

@@ -1,0 +1,366 @@
+/* style.css — Metbook app layer on top of organic.css (the Organic design system).
+ * organic.css holds the tokens (colors, fonts, spacing, radii) and base components
+ * (.btn, .card, .input, .tag, .seg). This file only lays out the app's pages. */
+
+/* Fraunces (heavy, soft): only for people's names, on the People cards and at the
+   top of a person's page (see .person-name, .detail h1).
+   The design system's heading font, Caprasimo, has no ő ű Ő Ű, which are common
+   in Hungarian names; Fraunces has them, and looks close to Caprasimo.
+   In the link: opsz 9..144 (the "optical size" follows the text size), wght 800
+   (heavy), SOFT 100 (the softest, roundest shapes).
+   (@import must come before all other rules in the file.) */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,800,100&display=swap');
+
+/* Always keep room for the scrollbar. Without this, when a page grows long
+   enough to need a scrollbar (like opening "Add a meeting"), the page gets
+   15px narrower and all the centered content jumps sideways. */
+html { scrollbar-gutter: stable; }
+/* The HTML "hidden" attribute should always hide, even on elements that
+   have their own display (like .person, which is display: flex) */
+[hidden] { display: none !important; }
+body { min-height: 100vh; display: flex; flex-direction: column; }
+a { color: var(--color-accent-700); text-decoration: none; }
+a:hover { color: var(--color-accent-600); }
+
+/* — header + nav — */
+.site-header {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px;
+  max-width: 960px; width: 100%; margin: 0 auto; padding: 20px;
+}
+.brand { display: flex; align-items: center; gap: 12px; margin-right: auto; color: var(--color-text); }
+.brand:hover { color: var(--color-text); }
+.brand-mark {
+  width: 40px; height: 40px; flex: none; border-radius: 999px;
+  background: var(--color-accent); color: var(--color-bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-name { font-family: var(--font-heading); font-size: 22px; line-height: 1.1; }
+.brand-sub { font-size: 12px; color: var(--color-neutral-700); }
+.site-nav { display: flex; gap: 4px; }
+.site-nav a {
+  padding: 8px 14px; border-radius: 999px; font-size: 14px; color: var(--color-text);
+}
+.site-nav a:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
+.site-nav a[aria-current="page"] { background: var(--color-accent-200); color: var(--color-accent-800); }
+
+main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20px 48px; }
+.narrow { max-width: 620px; }
+
+.site-footer { text-align: center; padding: 24px 20px; font-size: 13px; color: var(--color-neutral-700); }
+
+/* — shared — */
+.page-title { font-size: clamp(32px, 7vw, 48px); line-height: 1.05; margin: 12px 0 8px; }
+.lede { font-size: 17px; line-height: 1.6; color: var(--color-neutral-800); max-width: 46ch; }
+.back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; margin-bottom: 12px; }
+.stack { display: grid; gap: 20px; }
+.card { padding: 24px; box-shadow: var(--shadow-sm); }
+.card h2 { font-size: 24px; margin: 0 0 8px; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+.card ul { margin: 8px 0 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
+.card li { display: flex; gap: 12px; align-items: baseline; }
+.card li::before {
+  content: ""; width: 8px; height: 8px; flex: none; border-radius: 999px;
+  background: var(--color-accent-2); transform: translateY(-1px);
+}
+.btn { font-size: 15px; padding: 11px 22px; min-height: 44px; }
+.btn-primary:hover { color: var(--color-bg); }
+.btn-danger { border: 1px solid var(--color-accent-700); color: var(--color-accent-800); background: transparent; }
+.btn-danger:hover { background: var(--color-accent-100); }
+
+/* — home — */
+.hero { display: grid; gap: 32px; align-items: center; padding: 24px 0 40px; }
+.hero-art { position: relative; aspect-ratio: 1; max-width: 320px; width: 100%; justify-self: center; }
+.hero-art span { position: absolute; border-radius: 999px; }
+.hero-art .b1 { inset: 8%; background: var(--color-accent-200); }
+.hero-art .b2 { width: 46%; height: 46%; left: 0; top: 4%; background: var(--color-accent-2-200); }
+.hero-art .b3 { width: 30%; height: 30%; right: 4%; bottom: 6%; background: var(--color-accent-300); }
+.hero-art .b4 {
+  inset: 30%; background: var(--color-surface); box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center; color: var(--color-accent-700);
+}
+@media (min-width: 720px) { .hero { grid-template-columns: 1.3fr 1fr; } }
+
+/* — people — */
+.people-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.people-head .page-title { margin-right: auto; }
+.count { margin-bottom: 14px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: 16px 0 28px; }
+
+/* Search box: the magnifier icon and the × button sit on top of the input
+   (position: absolute), and the input gets extra padding on both sides for them */
+.search { display: flex; gap: 10px; margin-top: 16px; }
+.search-field { position: relative; flex: 1; min-width: 0; }
+.search .input {
+  width: 100%; padding-left: 44px; padding-right: 46px;
+  -webkit-appearance: none; appearance: none;
+}
+/* Hide the browser's own × (we have our own, which looks the same everywhere) */
+.search .input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.search-icon {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  color: var(--color-neutral-700); pointer-events: none;
+}
+.search-clear {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-neutral-700);
+}
+.search-clear:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
+/* "3 people found" under the search box: a big accent-colored number + normal text.
+   align-items: baseline lines the big number and the small words up on the same bottom line. */
+.search-result { display: flex; align-items: baseline; gap: 8px; margin: 14px 4px 0; font-size: 17px; color: var(--color-neutral-800); }
+.search-result-count {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 30px; line-height: 1; color: var(--color-accent-700);
+}
+/* With live search (JavaScript on), the Search button isn't needed */
+.search.is-live .search-submit { display: none; }
+.seg a {
+  display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+  font-size: 14px; color: var(--color-text); white-space: nowrap;
+}
+.seg a + a { border-left: 1px solid var(--color-divider); }
+.seg a:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
+.seg a[aria-current="true"] { background: var(--color-accent-700); color: var(--color-neutral-100); }
+
+/* At most 3 cards per row. Each card must be at least 200px wide AND at least
+   a third of the row: max(200px, a third) picks the bigger of the two.
+   (100% - 40px) / 3 = a third of the row, after the two 20px gaps between cards.
+   So a wide screen fits exactly 3, and a narrow phone fits fewer (1 or 2). */
+.people-grid {
+  display: grid; gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(max(200px, calc((100% - 40px) / 3)), 1fr));
+}
+.person {
+  display: flex; flex-direction: column; gap: 6px; text-align: center;
+  padding: 10px 10px 16px; border-radius: calc(var(--radius-lg) * 1.15);
+  background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-sm);
+  transition: box-shadow .18s, transform .18s;
+}
+.person-photo {
+  aspect-ratio: 4 / 3; border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 8px;
+  background: var(--color-accent-200); color: var(--color-accent-800);
+  display: flex; align-items: center; justify-content: center;
+}
+.person-photo img { width: 100%; height: 100%; object-fit: cover; }
+.person:nth-child(3n+2) .person-photo { background: var(--color-accent-2-200); color: var(--color-accent-2-800); }
+.person:nth-child(3n+3) .person-photo { background: var(--color-neutral-200); color: var(--color-neutral-800); }
+.person > :not(.person-photo) { padding: 0 6px; }
+.person-notes {
+  font-size: 13.5px; line-height: 1.45; color: var(--color-neutral-800); margin: 2px 0 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.person:hover { color: var(--color-text); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+/* :target = the card whose id is in the address (#person-79): the person you just
+   came back from gets a soft ring, so you see where you were.
+   scroll-margin-top: a little room above the card when the browser scrolls to it. */
+.person { scroll-margin-top: 24px; }
+.person:target { box-shadow: 0 0 0 3px var(--color-accent-400), var(--shadow-md); }
+/* People's names (on the cards, and at the top of a person's page) use Fraunces.
+   font-variation-settings picks a spot on the font's "SOFT" slider (0-100). */
+.person-name, .detail h1 {
+  font-family: "Fraunces", Georgia, serif; font-weight: 800; font-variation-settings: "SOFT" 100;
+}
+.person-name { font-size: 18px; line-height: 1.15; }
+.person-date { font-size: 12.5px; color: var(--color-neutral-700); }
+.person.add {
+  background: transparent; box-shadow: none; justify-content: center; min-height: 180px;
+  border: 2px dashed var(--color-neutral-400); color: var(--color-accent-700);
+  align-items: center; text-align: center; gap: 10px;
+}
+/* "Show more" button under the cards, in the middle */
+.show-more-row { display: flex; justify-content: center; margin-top: 28px; }
+.show-more-left { font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-700); }
+.person.add:hover { background: var(--color-accent-100); border-color: var(--color-accent); color: var(--color-accent-800); }
+
+.avatar {
+  width: 104px; height: 104px; flex: none; border-radius: 999px; overflow: hidden;
+  background: var(--color-accent-200); color: var(--color-accent-800);
+  display: flex; align-items: center; justify-content: center;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar.lg { width: 100%; max-width: 420px; height: auto; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); }
+
+.empty { align-items: center; text-align: center; padding: 48px 24px; }
+.empty-icon { color: var(--color-accent-700); }
+.empty p { color: var(--color-neutral-700); }
+
+/* — contact detail — */
+.detail { align-items: center; text-align: center; padding: 36px 24px 28px; gap: 16px; }
+.detail h1 { font-size: clamp(30px, 6vw, 40px); margin: 4px 0 0; }
+.facts { display: grid; gap: 12px; width: 100%; text-align: left; margin-top: 8px; }
+.fact { display: flex; gap: 14px; padding: 16px 18px; border-radius: var(--radius-lg); background: var(--color-bg); }
+.fact-icon {
+  width: 36px; height: 36px; flex: none; border-radius: 999px;
+  background: var(--color-accent-2-100); color: var(--color-accent-2-800);
+  display: flex; align-items: center; justify-content: center;
+}
+.fact-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--color-neutral-700); }
+.fact-value { font-size: 16px; line-height: 1.6; margin: 2px 0 0; }
+.delete-form { width: 100%; margin-top: 20px; }
+.detail-sub { margin: 0; font-size: 14px; color: var(--color-neutral-700); }
+
+/* — meetings timeline — */
+.timeline-card { margin-top: 20px; gap: 16px; }
+.timeline-card h2 { margin: 0; }
+
+.add-meeting summary {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  list-style: none; font-weight: 600; color: var(--color-accent-700);
+}
+.add-meeting summary::-webkit-details-marker { display: none; }
+.add-meeting summary:hover { color: var(--color-accent-600); }
+.add-meeting[open] summary { margin-bottom: 16px; }
+.meeting-form { display: grid; gap: 16px; }
+.meeting-form .btn { justify-self: start; }
+
+/* The line: a left border on the list. The dots: a ::before circle on each
+   meeting, pulled left so it sits exactly on the line.
+   We write ".timeline .meeting" (two classes) instead of just ".meeting":
+   the bullet-list rule ".card li" above would otherwise win, because a class
+   plus a tag name is more "specific" than a single class. */
+.timeline {
+  list-style: none; margin: 4px 0 0 9px; padding: 0 0 0 24px;
+  border-left: 2px solid var(--color-accent-300);
+  display: grid; gap: 14px;
+}
+.timeline .meeting {
+  display: block; position: relative; padding: 12px 14px;
+  border-radius: var(--radius-md); background: var(--color-bg);
+}
+.timeline .meeting::before {
+  content: ""; position: absolute; left: -35px; top: 15px; transform: none;
+  width: 20px; height: 20px; border-radius: 999px;
+  background: var(--color-accent); border: 4px solid var(--color-surface);
+}
+.timeline .meeting.first::before { background: var(--color-accent-2); }
+.meeting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.meeting-date { font-weight: 600; }
+.meeting-actions { margin-left: auto; display: flex; gap: 2px; }
+.meeting-action { width: 36px; height: 36px; min-height: 0; padding: 0; color: var(--color-neutral-700); }
+.meeting-action:hover { color: var(--color-accent-800); }
+.timeline .meeting .error { margin-bottom: 14px; }
+.meeting-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.meeting-labels .tag:hover { filter: brightness(0.96); }
+.meeting-notes { margin: 4px 0 0; line-height: 1.5; color: var(--color-neutral-800); white-space: pre-line; }
+.timeline-empty { margin: 0; color: var(--color-neutral-700); }
+
+/* — meeting photos — */
+/* auto-fill + minmax: as many 64px+ columns as fit, so phones get 3
+   photos per row and wide screens more. aspect-ratio: 1 makes them square. */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; margin-top: 10px; }
+.field .photo-grid { margin-top: 0; }
+.photo-grid img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); }
+.photo-grid a:hover img { filter: brightness(0.92); }
+/* In the edit form: a photo with its "Remove" checkbox under it.
+   :has(input:checked) = "a photo-remove box that contains a ticked checkbox" */
+.photo-remove { display: grid; gap: 4px; cursor: pointer; }
+.photo-remove .check { font-size: 13px; }
+.photo-remove:has(input:checked) img { opacity: .35; outline: 3px solid var(--color-accent-700); outline-offset: -3px; }
+
+/* — add contact form — */
+.error {
+  display: flex; gap: 10px; align-items: flex-start; padding: 14px 18px; margin-bottom: 20px;
+  border-radius: var(--radius-lg); background: var(--color-accent-100); color: var(--color-accent-900);
+}
+.form-card { gap: 20px; }
+.field { display: grid; gap: 6px; }
+.field > label { font-size: 14px; font-weight: 600; color: var(--color-text); margin: 0; }
+.field .hint { font-size: 12.5px; color: var(--color-neutral-700); }
+.input { min-height: 44px; font-size: 16px; background: var(--color-neutral-100); }
+textarea.input { border-radius: 20px; padding: 12px 16px; min-height: 120px; }
+input[type="file"].input { padding: 8px 10px; }
+input[type="file"]::file-selector-button {
+  font: inherit; font-size: 14px; margin-right: 12px; padding: 6px 14px; cursor: pointer;
+  border: 0; border-radius: 999px; background: var(--color-accent-200); color: var(--color-accent-800);
+}
+.form-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* — add/edit contact: preview of a chosen or pasted picture — */
+.picture-preview { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--color-accent-800); }
+.picture-preview img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--radius-md); }
+
+/* — edit contact: current picture + "Remove this picture" checkbox — */
+.current-picture { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+.current-picture img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--radius-md); }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--color-accent-700); }
+
+/* — labels — */
+/* On the cards and the detail page */
+.person-labels, .detail-labels { display: flex; flex-wrap: wrap; gap: 4px; }
+.person-labels .tag, .detail-labels .tag { overflow-wrap: anywhere; }
+/* The "+11" tag for the labels that don't fit on a card */
+.tag-more { border: 1px solid var(--color-divider); color: var(--color-neutral-700); }
+/* On a card, the labels stay on ONE line (card-labels.js decides how many fit).
+   flex: none = a label never gets squeezed narrower than its text. */
+/* "safe center": centered when the labels fit; if they're too wide, they start
+   at the left instead, so card-labels.js can measure how much sticks out */
+.person-labels { flex-wrap: nowrap; overflow: hidden; justify-content: safe center; }
+.person-labels .tag {
+  display: block; flex: none; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;   /* "…" if a label has to be cut */
+}
+/* Only when even a single label is too long for the card may it shrink ("Very long lab…") */
+.person-labels.squeeze .tag:first-child { flex-shrink: 1; min-width: 0; }
+.detail-labels { justify-content: center; }
+.detail-labels .tag { font-size: 13px; padding: 4px 12px; }
+.detail-labels .tag:hover { filter: brightness(0.96); }
+
+/* The picker on the add/edit forms. A <fieldset> groups the checkboxes;
+   we remove its default border and padding. */
+.label-picker { border: 0; margin: 0; padding: 0; min-width: 0; }
+.label-picker legend { padding: 0; margin-bottom: 6px; font-size: 14px; font-weight: 600; }
+.label-options { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Pill-shaped checkboxes. Used by the label picker (.label-option) and by the
+   "Show:" switches on the People page (.view-option): one look for both. */
+.label-option, .view-option { cursor: pointer; }
+/* The real checkbox is invisible but still there, so the keyboard and screen
+   readers can use it. The <span> next to it is what you see. */
+.label-option input, .view-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.label-option span, .view-option span {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px;
+  border-radius: 999px; border: 1px solid var(--color-divider);
+  background: var(--color-neutral-100); font-size: 14px;
+}
+.label-option:hover span, .view-option:hover span { border-color: var(--color-accent-500); }
+/* "input:checked + span" = the span right after a ticked checkbox */
+.label-option input:checked + span, .view-option input:checked + span {
+  background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-neutral-100);
+}
+.label-option input:checked + span::before, .view-option input:checked + span::before { content: "✓"; }
+.label-option input:focus-visible + span, .view-option input:focus-visible + span {
+  outline: 2px solid var(--color-accent); outline-offset: 2px;
+}
+
+/* — "Show:" switches on the People page — */
+/* margin-right: auto pushes the "Add New Contact" button to the far right */
+.view-options { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-right: auto; }
+.view-options-title, .label-filter-title { font-size: 14px; color: var(--color-neutral-700); margin-right: 2px; }
+.view-option span { min-height: 32px; padding: 4px 12px; font-size: 13px; }
+/* A locked switch (e.g. First met while sorting by first met): ticked, a bit faded */
+.view-option:has(input:disabled) { cursor: default; }
+.view-option input:disabled + span { opacity: .6; }
+/* Each switched-off part gets a "hide-..." class on the grid; these rules hide it on every card */
+.people-grid.hide-labels .person-labels,
+.people-grid.hide-notes .person-notes,
+.people-grid.hide-firstmet .person-date { display: none; }
+
+/* The filter row on the People page */
+.label-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.label-filter a {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; min-height: 36px;
+  border-radius: 999px; border: 1px solid var(--color-divider);
+  font-size: 14px; color: var(--color-text);
+}
+.label-filter a:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
+.label-filter a[aria-current="true"] {
+  background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-neutral-100);
+}
+.label-filter-count { font-size: 12px; opacity: .75; }
+/* A ✓ on the chosen labels, so it's clear you can pick several */
+.label-chip[aria-current="true"]::before { content: "✓"; }
+/* "Any of these | All of these": the same size as the label pills next to it */
+.label-match a { padding: 6px 14px; font-size: 13px; }
+.form-actions .btn { flex: 1 1 160px; }

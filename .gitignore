@@ -1,0 +1,17 @@
+# Private data: never upload these
+contacts.db
+contacts_backup*.db
+*.db
+uploads/
+your_friends.html
+
+# Local Python setup (each computer makes its own)
+.venv/
+__pycache__/
+*.pyc
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Personal English-learning notes. Remove the "#" in front of the next line to keep them private too.
+# english_notes/

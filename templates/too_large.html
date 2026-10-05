@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Files too big - Metbook{% endblock %}
+
+{% block content %}
+<div class="narrow" style="margin:0 auto">
+    <div class="card empty">
+        <span class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></span>
+        <h2>Those files are too big</h2>
+        <p>Together they're more than {{ max_mb }} MB. Go back and choose fewer photos, or add them in a few rounds.</p>
+        {# history.back() is JavaScript for "the browser's Back button" #}
+        <button class="btn btn-primary" type="button" onclick="history.back()">Go back</button>
+    </div>
+</div>
+{% endblock %}

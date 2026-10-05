@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ contact.name }} - Metbook{% endblock %}
+
+{% block content %}
+<div class="narrow" style="margin:0 auto">
+    <a class="back-link" href="{{ url_for('view_contact', contact_id=contact.id) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Back to {{ contact.name }}</a>
+    <h1 class="page-title">Edit Contact</h1>
+    <p class="lede" style="margin-bottom:24px">Change their name, picture, labels, or notes. Meetings are edited on the timeline.</p>
+
+    {% if error %}
+    <div class="error" role="alert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <span><strong>Error:</strong> {{ error }}</span>
+    </div>
+    {% endif %}
+
+    {# request.form.get('name', contact.name): after a failed save, show what was typed;
+       otherwise show what's saved in the database #}
+    <form class="card form-card" method="POST" enctype="multipart/form-data">
+        <div class="field">
+            <label for="name">Name *</label>
+            <input class="input" type="text" id="name" name="name"
+                   value="{{ request.form.get('name', contact.name) }}" required>
+        </div>
+
+        <div class="field">
+            <label for="picture">Picture</label>
+            {% if contact.picture_path %}
+            <div class="current-picture">
+                <img src="{{ url_for('get_upload', filename=contact.picture_path) }}" alt="Current picture of {{ contact.name }}">
+                <label class="check">
+                    <input type="checkbox" name="remove_picture" value="1">
+                    Remove this picture
+                </label>
+            </div>
+            {% endif %}
+            <input class="input" type="file" id="picture" name="picture" accept="image/*">
+            {# Filled in by static/js/paste-picture.js when you choose or paste a picture #}
+            <div class="picture-preview" hidden><img alt="Preview of the new picture"><span></span></div>
+            <span class="hint">
+                {% if contact.picture_path %}Choose a new picture to replace the current one. {% endif %}PNG, JPG, GIF, or WebP • or copy a picture and press Ctrl+V
+            </span>
+        </div>
+
+        {% include "_label_picker.html" %}
+
+        <div class="field">
+            <label for="notes">Notes</label>
+            <textarea class="input" id="notes" name="notes">{{ request.form.get('notes', contact.notes or '') }}</textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save Changes</button>
+            <a class="btn btn-secondary" href="{{ url_for('view_contact', contact_id=contact.id) }}">Cancel</a>
+        </div>
+    </form>
+</div>
+<script type="module" src="{{ url_for('static', filename='js/paste-picture.js') }}"></script>
+{% endblock %}

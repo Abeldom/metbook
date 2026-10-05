@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Metbook - everyone I've met, in one book: pictures, notes, meetings and labels">
+    <meta name="theme-color" content="#f5ead8">
+
+    <title>{% block title %}Metbook{% endblock %}</title>
+
+    <!-- Organic design system: tokens + base components -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/organic.css') }}">
+    <!-- App layout on top of it -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="brand-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+            <span>
+                <span class="brand-name" style="display:block">Metbook</span>
+                <span class="brand-sub">Everyone I've met, in one book</span>
+            </span>
+        </a>
+        <nav class="site-nav">
+            <a href="{{ url_for('home') }}" {% if request.endpoint == 'home' %}aria-current="page"{% endif %}>Home</a>
+            <a href="{{ url_for('about') }}" {% if request.endpoint == 'about' %}aria-current="page"{% endif %}>About</a>
+            <a href="{{ url_for('people') }}" {% if request.endpoint in ['people', 'view_contact', 'add_contact_page', 'edit_contact_page'] %}aria-current="page"{% endif %}>People</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2026 Metbook. A learning project.</p>
+    </footer>
+</body>
+</html>

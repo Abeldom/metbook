@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Metbook{% endblock %}
+
+{% block content %}
+    <section class="hero">
+        <div>
+            <h1 class="page-title">Welcome to Metbook!</h1>
+            <p class="lede">
+                This app helps you remember and organize people you've met.
+                Store their picture, name, notes about them, and when you first met.
+            </p>
+            <div class="form-actions" style="max-width:420px">
+                <a class="btn btn-primary" href="{{ url_for('people') }}">See your people</a>
+                <a class="btn btn-secondary" href="{{ url_for('add_contact_page') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add someone</a>
+            </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+            <span class="b1"></span><span class="b2"></span><span class="b3"></span>
+            <span class="b4"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        </div>
+    </section>
+
+    <div class="stack">
+        <div class="card">
+            <h2>Getting Started</h2>
+            <p>Right now the app is under construction! We're adding:</p>
+            <ul>
+                <li>A contact list</li>
+                <li>Add new contacts</li>
+                <li>Picture uploads</li>
+                <li>Search by name or notes</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Check back soon!</h2>
+            <p>We'll add features one by one. Happy to have you here!</p>
+        </div>
+    </div>
+{% endblock %}
