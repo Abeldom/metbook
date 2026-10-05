@@ -109,7 +109,7 @@ moreButton.addEventListener("click", (event) => {
   update();
 });
 
-// Results are already live, so Enter doesn't need to reload the page.
+// Results are already live, so Enter and the "Search" button don't need to reload the page.
 // Instead we just close the phone keyboard by taking the focus away.
 form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -126,7 +126,7 @@ clearButton.addEventListener("click", (event) => {
   input.focus();
 });
 
-// Tell the CSS that live search is on: it hides the "Search" button
+// Tell the CSS that live search is on (the form gets the class "is-live")
 form.classList.add("is-live");
 
 // When you open a person, remember exactly how this page looks, so the

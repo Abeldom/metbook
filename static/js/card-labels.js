@@ -62,4 +62,12 @@ for (const row of rows) {
 
 // The page's fonts may finish loading a moment later, which changes how wide
 // the text is. document.fonts.ready waits for that, then we measure again.
-document.fonts.ready.then(() => rows.forEach(fitLabels));
+// Only then are the labels shown (CSS keeps them invisible until a row is "fitted"),
+// so you never see them jump from "3 labels" to the right number.
+function showAll() {
+  rows.forEach(fitLabels);
+  rows.forEach((row) => row.classList.add("fitted"));
+}
+document.fonts.ready.then(showAll);
+// Safety net: if the fonts are very slow, don't keep the labels hidden for long
+setTimeout(showAll, 1500);

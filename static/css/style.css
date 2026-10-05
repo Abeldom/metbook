@@ -8,8 +8,7 @@
    in Hungarian names; Fraunces has them, and looks close to Caprasimo.
    In the link: opsz 9..144 (the "optical size" follows the text size), wght 800
    (heavy), SOFT 100 (the softest, roundest shapes).
-   (@import must come before all other rules in the file.) */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,800,100&display=swap');
+   (Loaded by a <link> in templates/base.html: faster than @import.) */
 
 /* Always keep room for the scrollbar. Without this, when a page grows long
    enough to need a scrollbar (like opening "Add a meeting"), the page gets
@@ -114,8 +113,21 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
   font-size: 30px; line-height: 1; color: var(--color-accent-700);
 }
-/* With live search (JavaScript on), the Search button isn't needed */
-.search.is-live .search-submit { display: none; }
+/* Results are live while you type, so the Search button isn't needed on a computer:
+   Enter is enough. On a phone (a narrow screen, or a touchscreen) it stays visible:
+   tapping it closes the keyboard so you can see the results.
+   (min-width: 601px) and (pointer: fine) = a wide screen with a mouse. Only there it's hidden.
+   The "js" class is set in the page head, before anything is drawn, so the button is
+   never seen even for a moment. Without JavaScript it stays, because then you need it.
+   (To show it on a computer too, delete the second @media block below.) */
+/* On a phone the button is a bit smaller, so the box keeps room for its hint text */
+@media (max-width: 600px) {
+  .search-submit { padding-left: 14px; padding-right: 14px; font-size: 14px; }
+}
+@media (min-width: 601px) and (pointer: fine) {
+  .search.is-live .search-submit,
+  .js .search.live-search .search-submit { display: none; }
+}
 .seg a {
   display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
   font-size: 14px; color: var(--color-text); white-space: nowrap;
@@ -298,6 +310,13 @@ input[type="file"]::file-selector-button {
 /* "safe center": centered when the labels fit; if they're too wide, they start
    at the left instead, so card-labels.js can measure how much sticks out */
 .person-labels { flex-wrap: nowrap; overflow: hidden; justify-content: safe center; }
+/* No flicker: while the script is still measuring, the labels are invisible but keep
+   their space. card-labels.js adds "fitted" when it's done. ("js" class: see base.html;
+   without JavaScript the labels just stay visible.) */
+.js .person-labels:not(.fitted) { visibility: hidden; }
+/* When a page loads because you tapped a link, fade smoothly from the old page to the
+   new one instead of redrawing it in front of you */
+@view-transition { navigation: auto; }
 .person-labels .tag {
   display: block; flex: none; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;   /* "…" if a label has to be cut */
@@ -329,7 +348,8 @@ input[type="file"]::file-selector-button {
 .label-option input:checked + span, .view-option input:checked + span {
   background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-neutral-100);
 }
-.label-option input:checked + span::before, .view-option input:checked + span::before { content: "✓"; }
+/* The ✓ is only for the "Show:" switches; a chosen label is shown by its fill color only */
+.view-option input:checked + span::before { content: "✓"; }
 .label-option input:focus-visible + span, .view-option input:focus-visible + span {
   outline: 2px solid var(--color-accent); outline-offset: 2px;
 }
@@ -359,8 +379,7 @@ input[type="file"]::file-selector-button {
   background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-neutral-100);
 }
 .label-filter-count { font-size: 12px; opacity: .75; }
-/* A ✓ on the chosen labels, so it's clear you can pick several */
-.label-chip[aria-current="true"]::before { content: "✓"; }
+/* A chosen label is shown by its fill color only: adding a ✓ would make it wider */
 /* "Any of these | All of these": the same size as the label pills next to it */
 .label-match a { padding: 6px 14px; font-size: 13px; }
 .form-actions .btn { flex: 1 1 160px; }

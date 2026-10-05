@@ -8,6 +8,19 @@
 
     <title>{% block title %}Metbook{% endblock %}</title>
 
+    <!-- Tells the CSS that JavaScript works, so it may hide things until a script has set them up -->
+    <script>document.documentElement.classList.add("js");</script>
+
+    <!-- Fonts: the files live in static/fonts (no download from Google at all).
+         preload = "start fetching this file right now, you'll need it", so the text
+         is drawn in the right font from the very first moment instead of switching
+         from a plain font a moment later. (crossorigin is required for fonts, even
+         from our own server.) -->
+    <link rel="preload" href="{{ url_for('static', filename='fonts/caprasimo-400-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/figtree-400-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/fraunces-800-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+
     <!-- Organic design system: tokens + base components -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/organic.css') }}">
     <!-- App layout on top of it -->
