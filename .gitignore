@@ -14,4 +14,4 @@ __pycache__/
 .claude/settings.local.json
 
 # Personal English-learning notes. Remove the "#" in front of the next line to keep them private too.
-# english_notes/
+english_notes/
