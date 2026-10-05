@@ -10,7 +10,12 @@
     <div class="card detail">
         <div class="avatar lg">
             {% if contact.picture_path %}
-                <img src="{{ url_for('get_upload', filename=contact.picture_path) }}" alt="{{ contact.name }}">
+                {# Click the picture: static/js/lightbox.js shows the whole ORIGINAL on a dark background
+                   (without JavaScript, the link just opens the original). #}
+                <a class="zoom" href="{{ url_for('get_upload', filename=contact.picture_path) }}" data-lightbox
+                   aria-label="View the whole picture of {{ contact.name }}">
+                    <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}">
+                </a>
             {% else %}
                 <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
             {% endif %}
@@ -134,7 +139,7 @@
                         <div class="photo-grid">
                             {% for photo in meeting.photos %}
                             <label class="photo-remove">
-                                <img src="{{ url_for('get_upload', filename=photo.filename) }}" alt="Photo {{ loop.index }}" loading="lazy">
+                                <img src="{{ url_for('get_thumb', filename=photo.filename) }}" alt="Photo {{ loop.index }}" loading="lazy">
                                 <span class="check">
                                     <input type="checkbox" name="remove_photos" value="{{ photo.id }}"
                                            {% if photo.id|string in request.form.getlist('remove_photos') %}checked{% endif %}>
@@ -185,8 +190,10 @@
                 {# Small square previews; tapping one opens the full photo #}
                 <div class="photo-grid">
                     {% for photo in meeting.photos %}
-                    <a href="{{ url_for('get_upload', filename=photo.filename) }}">
-                        <img src="{{ url_for('get_upload', filename=photo.filename) }}"
+                    {# data-lightbox="meeting-12": the photos of one meeting form a group, so in the
+                       viewer you can go to the next and previous one #}
+                    <a href="{{ url_for('get_upload', filename=photo.filename) }}" data-lightbox="meeting-{{ meeting.id }}">
+                        <img src="{{ url_for('get_thumb', filename=photo.filename) }}"
                              alt="Photo {{ loop.index }} from {{ meeting.date|nice_date }}" loading="lazy">
                     </a>
                     {% endfor %}

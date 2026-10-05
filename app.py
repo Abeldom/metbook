@@ -12,6 +12,7 @@ from database import (init_database, add_contact, get_all_contacts, delete_conta
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from PIL import Image, ImageOps   # Pillow: opens and resizes pictures
 
 # Create the application object. __name__ tells Flask where this file lives,
 # so it can later find our HTML templates and CSS files next to it.
@@ -27,8 +28,15 @@ IMAGE_ERROR = "Only PNG, JPG, GIF or WebP pictures can be used."
 MAX_UPLOAD_MB = 50
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
-# Create uploads folder if it doesn't exist
+# Small copies of the pictures, for the People page and other small spots.
+# The ORIGINAL file always stays in uploads/ untouched; a small copy is a separate
+# file in uploads/thumbs/, made from it. Click a picture and you see the original.
+THUMB_FOLDER = os.path.join(UPLOAD_FOLDER, "thumbs")
+THUMB_SIZE = 600   # the longest side of a small copy, in pixels
+
+# Create the uploads folders if they don't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(THUMB_FOLDER, exist_ok=True)
 
 # Initialize the database when the app starts
 init_database()
@@ -64,16 +72,65 @@ def save_upload_file(file):
     filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
     file.save(filepath)
 
+    # Make the small copy right away, so the first look at the picture is quick too.
+    # (If that fails, nothing is lost: the small copy is made again when it's first needed.)
+    make_thumbnail(unique_filename)
+
     return unique_filename
 
 
+def thumb_path(filename):
+    """Where the small copy of a picture lives: uploads/thumbs/<same name>.jpg"""
+    stem = os.path.splitext(os.path.basename(filename))[0]
+    return os.path.join(THUMB_FOLDER, stem + ".jpg")
+
+
+def make_thumbnail(filename):
+    """
+    Make the small copy of a picture (if there isn't one yet).
+    The original is only read, never changed.
+
+    Returns:
+        str: the path of the small copy, or None if it couldn't be made
+             (a broken file, or the original is gone)
+    """
+    source = os.path.join(UPLOAD_FOLDER, os.path.basename(filename))
+    target = thumb_path(filename)
+    if os.path.exists(target):
+        return target
+    try:
+        with Image.open(source) as image:
+            # Phones store "which way is up" as a note inside the photo.
+            # exif_transpose turns the picture the right way up for real.
+            image = ImageOps.exif_transpose(image)
+            # thumbnail() shrinks it to fit in THUMB_SIZE x THUMB_SIZE, keeping the proportions
+            # (and never makes a small picture bigger)
+            image.thumbnail((THUMB_SIZE, THUMB_SIZE))
+            # JPEG can't be see-through, so a transparent PNG gets a white background
+            if image.mode in ("RGBA", "LA", "P"):
+                image = image.convert("RGBA")
+                background = Image.new("RGB", image.size, "white")
+                background.paste(image, mask=image.getchannel("A"))
+                image = background
+            elif image.mode != "RGB":
+                image = image.convert("RGB")
+            image.save(target, "JPEG", quality=82, optimize=True)
+        return target
+    except (OSError, ValueError):
+        # OSError covers a missing or damaged file (PIL's UnidentifiedImageError is one too)
+        return None
+
+
 def delete_upload_file(filename):
-    """Remove a picture from the uploads folder, if it's there."""
+    """Remove a picture from the uploads folder, if it's there. Its small copy goes too."""
     # basename() keeps only the file's name, so this can never reach
     # a file outside the uploads folder
     filepath = os.path.join(UPLOAD_FOLDER, os.path.basename(filename))
     if os.path.exists(filepath):
         os.remove(filepath)
+    small = thumb_path(filename)
+    if os.path.exists(small):
+        os.remove(small)
 
 
 def chosen_files(field_name):
@@ -138,8 +195,8 @@ PAGE_SIZE = 50
 
 # The parts of a People card that the "Show:" switches can turn on and off:
 # {code name: what the switch says}. Shown when nothing was chosen yet: labels and notes.
-CARD_PARTS = {"labels": "Labels", "notes": "Notes", "firstmet": "First met"}
-DEFAULT_CARD_PARTS = {"labels", "notes"}
+CARD_PARTS = {"name": "Name", "labels": "Labels", "notes": "Notes", "firstmet": "First met"}
+DEFAULT_CARD_PARTS = {"name", "labels", "notes"}
 
 # The places the search box can look in: {code name: what the switch says}.
 # "events" = the notes and labels of the meetings. All are on until you choose otherwise.
@@ -264,10 +321,12 @@ def people():
     # and sends back with every request. static/js/people-view.js writes it.
     # None = never chosen yet, so we use the default.
     # Two cookies:
-    #  - "people_view": Labels and First met, kept for a year.
+    #  - "people_view_2": Name, Labels and First met, kept for a year.
+    #    (The "_2" is new: the old "people_view" cookie didn't know about Name, so it would
+    #    have switched Name off. The old cookie is simply ignored.)
     #  - "people_notes_now": Notes only. A "session cookie": it lasts until the browser is
     #    closed. So Notes start ticked again on every new visit, and can be changed from there.
-    saved_view = request.cookies.get("people_view")
+    saved_view = request.cookies.get("people_view_2")
     if saved_view is None:
         saved_parts = DEFAULT_CARD_PARTS - {"notes"}
     else:
@@ -417,10 +476,30 @@ def edit_contact_page(contact_id):
                            **label_form_data(current_label_ids))
 
 
+# max_age: tell the browser it may keep a picture for a year. That's safe because every
+# upload gets its own unique file name: a changed picture is a new name, never a new
+# version of an old one. Pictures then load instantly the second time.
+PICTURE_MAX_AGE = 60 * 60 * 24 * 365
+
+
 @app.route("/uploads/<filename>")
 def get_upload(filename):
-    """Serve uploaded files (pictures) from the uploads folder"""
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    """Serve the ORIGINAL of an uploaded picture, exactly as it was uploaded"""
+    return send_from_directory(UPLOAD_FOLDER, filename, max_age=PICTURE_MAX_AGE)
+
+
+@app.route("/thumbs/<filename>")
+def get_thumb(filename):
+    """
+    Serve the small copy of a picture, for small spots (cards, previews).
+    It's made the first time it's asked for, if it doesn't exist yet (that's how the
+    pictures uploaded before this feature get theirs). If it can't be made (e.g. a
+    damaged file), the original is sent instead.
+    """
+    small = make_thumbnail(filename)
+    if small is None:
+        return send_from_directory(UPLOAD_FOLDER, filename, max_age=PICTURE_MAX_AGE)
+    return send_from_directory(THUMB_FOLDER, os.path.basename(small), max_age=PICTURE_MAX_AGE)
 
 
 def show_contact_page(contact, **extra):

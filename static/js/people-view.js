@@ -24,7 +24,8 @@ function saveChoice() {
   //   path=/                 -> for every page of the site
   //   max-age=31536000       -> keep it for one year (in seconds)
   //   SameSite=Lax           -> don't send it along when other sites link here in the background
-  document.cookie = `people_view=${others.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
+  // (The name has a "_2" because the old cookie "people_view" didn't know the Name switch.)
+  document.cookie = `people_view_2=${others.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
 
   // Notes get a "session cookie" (no max-age): it is forgotten when the browser is closed,
   // so Notes start ticked again the next time you open the app. "1" = on, "0" = off.

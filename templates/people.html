@@ -13,7 +13,7 @@
     {% set match_param = match if label_ids|length > 1 else none %}
 
     {# The small counter next to the title: how many people there are
-       (the search result count has its own, bigger line under the search box) #}
+       (the search result count has its own, bigger line under the "Sort by" row) #}
     <div class="people-head">
         <h1 class="page-title">Your Contacts</h1>
         <span class="tag tag-accent count">
@@ -64,15 +64,6 @@
         {% endfor %}
     </div>
 
-    {% if contacts %}
-    {# "3 people found": right under the search box, only while searching (and not
-       when nobody matches: then the "No one matches" box below says it).
-       aria-live="polite": screen readers read the new number out when it changes. #}
-    <p class="search-result" aria-live="polite" {% if not search or shown == 0 %}hidden{% endif %}>
-        <strong class="search-result-count">{{ shown }}</strong>
-        <span class="search-result-text">{{ 'person' if shown == 1 else 'people' }} found</span>
-    </p>
-    {% endif %}
 
     {# Label filter: one link per label. Tapping a label adds it to the chosen ones,
        tapping a chosen one takes it out again. With none chosen, everyone is shown.
@@ -151,6 +142,14 @@
     </div>
 
     {% if contacts %}
+        {# "3 people found": right below the "Sort by" row, only while searching (and not
+           when nobody matches: then the "No one matches" box below says it).
+           aria-live="polite": screen readers read the new number out when it changes. #}
+        <p class="search-result" aria-live="polite" {% if not search or shown == 0 %}hidden{% endif %}>
+            <strong class="search-result-count">{{ shown }}</strong>
+            <span class="search-result-text">{{ 'person' if shown == 1 else 'people' }} found</span>
+        </p>
+
         <div class="card empty no-results" {% if not (search and shown == 0) %}hidden{% endif %}>
             <span class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
             <h2>No one matches “<span class="no-results-query">{{ search }}</span>”</h2>
@@ -178,7 +177,8 @@
                 <div class="person-photo">
                     {% if contact.picture_path %}
                         {# loading="lazy": the browser only downloads the picture when the card comes into view #}
-                        <img src="{{ url_for('get_upload', filename=contact.picture_path) }}" alt="{{ contact.name }}" loading="lazy">
+                        {# The small copy (/thumbs/...): the People page shows many pictures at once #}
+                        <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}" loading="lazy">
                     {% else %}
                         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
                     {% endif %}

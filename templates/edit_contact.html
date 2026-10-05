@@ -28,7 +28,11 @@
             <label for="picture">Picture</label>
             {% if contact.picture_path %}
             <div class="current-picture">
-                <img src="{{ url_for('get_upload', filename=contact.picture_path) }}" alt="Current picture of {{ contact.name }}">
+                {# Click it to see the whole original picture (static/js/lightbox.js) #}
+                <a class="zoom" href="{{ url_for('get_upload', filename=contact.picture_path) }}" data-lightbox
+                   aria-label="View the whole picture">
+                    <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="Current picture of {{ contact.name }}">
+                </a>
                 <label class="check">
                     <input type="checkbox" name="remove_picture" value="1">
                     Remove this picture

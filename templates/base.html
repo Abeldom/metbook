@@ -55,6 +55,9 @@
     </button>
     <script type="module" src="{{ url_for('static', filename='js/to-top.js') }}"></script>
 
+    {# Click a picture (a link with data-lightbox) to see the whole original on a dark background #}
+    <script type="module" src="{{ url_for('static', filename='js/lightbox.js') }}"></script>
+
     {# Links back to the People list (menu, "Back to Contacts", "Cancel") return to the list as you left it #}
     <script type="module" src="{{ url_for('static', filename='js/return-to-people.js') }}"></script>
 </body>

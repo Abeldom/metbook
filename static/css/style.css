@@ -108,9 +108,11 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   color: var(--color-neutral-700);
 }
 .search-clear:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
-/* "3 people found" under the search box: a big accent-colored number + normal text.
-   align-items: baseline lines the big number and the small words up on the same bottom line. */
-.search-result { display: flex; align-items: baseline; gap: 8px; margin: 14px 4px 0; font-size: 17px; color: var(--color-neutral-800); }
+/* "3 people found" below the "Sort by" row: a big accent-colored number + normal text.
+   align-items: baseline lines the big number and the small words up on the same bottom line.
+   (The toolbar above has margin-bottom: 28px, so this sits a little closer to the cards: margin-top: -14px.) */
+.search-result { display: flex; align-items: baseline; gap: 8px; margin: -14px 4px 18px; font-size: 17px; color: var(--color-neutral-800); }
+.search-result[hidden] { display: none; }
 .search-result-count {
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
   font-size: 30px; line-height: 1; color: var(--color-accent-700);
@@ -391,6 +393,7 @@ input[type="file"]::file-selector-button {
 .view-option:has(input:disabled) { cursor: default; }
 .view-option input:disabled + span { opacity: .6; }
 /* Each switched-off part gets a "hide-..." class on the grid; these rules hide it on every card */
+.people-grid.hide-name .person-name,
 .people-grid.hide-labels .person-labels,
 .people-grid.hide-notes .person-notes,
 .people-grid.hide-firstmet .person-date { display: none; }
@@ -430,6 +433,34 @@ input[type="file"]::file-selector-button {
   display: block; width: 100%; margin-top: 10px; font-size: 13px;
   border: 1px solid var(--color-divider) !important;
 }
+
+/* Pictures you can click to see the whole original (lightbox.js). */
+.zoom { display: block; width: 100%; height: 100%; cursor: zoom-in; }
+.current-picture .zoom { width: auto; height: auto; flex: none; }
+.avatar .zoom:hover img { filter: brightness(0.94); }
+
+/* The viewer: a dark layer over the whole page. The picture is shown completely
+   (object-fit: contain = fit inside the screen without cutting anything off). */
+.lightbox {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(24, 14, 8, .92);
+}
+.lightbox[hidden] { display: none; }
+.lightbox-picture { max-width: 94vw; max-height: 88vh; object-fit: contain; border-radius: var(--radius-sm); }
+.lightbox button {
+  position: absolute; border: 0; cursor: pointer; border-radius: 50%;
+  background: rgba(245, 234, 216, .16); color: #fff; font: inherit; line-height: 1;
+}
+.lightbox button:hover { background: rgba(245, 234, 216, .3); }
+.lightbox button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.lightbox-close { top: 14px; right: 14px; width: 44px; height: 44px; font-size: 30px; }
+.lightbox-nav { top: 50%; transform: translateY(-50%); width: 48px; height: 48px; font-size: 34px; }
+.lightbox-prev { left: 12px; }
+.lightbox-next { right: 12px; }
+.lightbox-counter { position: absolute; bottom: 14px; left: 0; right: 0; margin: 0; text-align: center; color: #fff; font-size: 14px; }
+/* While the viewer is open, the page behind it doesn't scroll */
+body.lightbox-open { overflow: hidden; }
 
 /* The "back to top" button (to-top.js): fixed = it stays in the corner of the screen while
    you scroll. Invisible and not clickable until the script adds "is-visible". */

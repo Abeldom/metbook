@@ -15,7 +15,7 @@ const clearButton = form.querySelector(".search-clear");
 const cards = document.querySelectorAll(".person[data-name]");
 // The "Search in:" switches: Names / Notes / Events / Labels
 const scopeBoxes = [...document.querySelectorAll(".scope-option input")];
-// The "3 people found" line under the search box
+// The "3 people found" line below the "Sort by" row
 const result = document.querySelector(".search-result");
 const resultCount = document.querySelector(".search-result-count");
 const resultText = document.querySelector(".search-result-text");
