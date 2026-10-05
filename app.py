@@ -197,13 +197,18 @@ app.add_template_filter(simplify)
 PAGE_SIZE = 50
 
 # The parts of a People card that the "Show:" switches can turn on and off:
-# {code name: what the switch says}. Shown when nothing was chosen yet: labels and notes.
+# {code name: what the switch says}. Shown when nothing was chosen yet: only the name, with the
+# notes. (Labels and First met are off until you switch them on. Sorted by First met, the
+# dates are shown anyway: see forced_parts in people().)
 CARD_PARTS = {"name": "Name", "labels": "Labels", "notes": "Notes", "firstmet": "First met"}
-DEFAULT_CARD_PARTS = {"name", "labels", "notes"}
+DEFAULT_CARD_PARTS = {"name", "notes"}
 
 # The places the search box can look in: {code name: what the switch says}.
-# "events" = the notes and labels of the meetings. All are on until you choose otherwise.
+# "events" = the notes and labels of the meetings.
 SEARCH_SCOPES = {"name": "Names", "notes": "Notes", "events": "Events", "labels": "Labels"}
+# Until you choose otherwise, the search looks only in the names. Switch on Notes, Events or
+# Labels under "Advanced search" to search there too.
+DEFAULT_SEARCH_SCOPES = {"name"}
 
 
 # Each label always gets the same color: its id picks one from this list.
@@ -394,14 +399,16 @@ def people():
     # ?match=all: people with ALL the chosen labels. Otherwise: with ANY of them.
     match = "all" if request.args.get("match") == "all" else "any"
 
-    # Where to search: ?in=name&in=notes (what the form sends without JavaScript), or the
-    # choice saved in the "search_in" cookie ("name.notes", written by people-search.js),
-    # or everywhere. & keeps only places we know.
+    # Where to search: ?in=name&in=notes (what the form sends), or the choice saved in the
+    # "search_in_2" cookie ("name.notes", written by people-search.js), or the default: only the
+    # names. & keeps only places we know.
+    # (The "_2" is new: an older cookie called "search_in" held the old default, everywhere,
+    # and is simply ignored, so everyone starts with the new default once.)
     wanted_scopes = set(request.args.getlist("in")) & set(SEARCH_SCOPES)
     if not wanted_scopes:
-        saved_scopes = request.cookies.get("search_in", "")
+        saved_scopes = request.cookies.get("search_in_2", "")
         wanted_scopes = set(saved_scopes.split(".")) & set(SEARCH_SCOPES)
-    search_scopes = wanted_scopes or set(SEARCH_SCOPES)
+    search_scopes = wanted_scopes or set(DEFAULT_SEARCH_SCOPES)
 
     # The label filter leaves out the other contacts completely.
     # The search only HIDES cards: that way, while you type,
@@ -435,12 +442,12 @@ def people():
     # and sends back with every request. static/js/people-view.js writes it.
     # None = never chosen yet, so we use the default.
     # Two cookies:
-    #  - "people_view_2": Name, Labels and First met, kept for a year.
-    #    (The "_2" is new: the old "people_view" cookie didn't know about Name, so it would
-    #    have switched Name off. The old cookie is simply ignored.)
+    #  - "people_view_3": Name, Labels and First met, kept for a year.
+    #    (The number is raised whenever the defaults change: the older cookies, "people_view" and
+    #    "people_view_2", are simply ignored, so everyone starts from the new defaults once.)
     #  - "people_notes_now": Notes only. A "session cookie": it lasts until the browser is
     #    closed. So Notes start ticked again on every new visit, and can be changed from there.
-    saved_view = request.cookies.get("people_view_2")
+    saved_view = request.cookies.get("people_view_3")
     if saved_view is None:
         saved_parts = DEFAULT_CARD_PARTS - {"notes"}
     else:
@@ -463,6 +470,7 @@ def people():
                            card_parts=CARD_PARTS, shown_parts=shown_parts,
                            saved_parts=saved_parts, forced_parts=forced_parts,
                            search_scope_options=SEARCH_SCOPES, search_scopes=search_scopes,
+                           search_scopes_changed=search_scopes != DEFAULT_SEARCH_SCOPES,
                            limit=limit, page_size=PAGE_SIZE, remaining=remaining)
 
 
@@ -731,8 +739,45 @@ def edit_meeting_page(contact_id, meeting_id):
     return redirect(url_for("view_contact", contact_id=contact_id,
                             _anchor=f"meeting-{meeting_id}"))
 
+def find_lan_address():
+    """
+    This computer's address on your home network, e.g. "192.168.0.112".
+    How: we "connect" a UDP socket to an outside address. UDP sends nothing at that
+    moment; the system only works out which of its own addresses it would use.
+    """
+    import socket
+    probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        probe.connect(("8.8.8.8", 80))
+        return probe.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        probe.close()
+
+
 # This block only runs when you start the file directly with: python app.py
-# debug=True gives helpful error pages and restarts the server automatically
-# whenever you save a change to this file.
 if __name__ == "__main__":
-    app.run(debug=True)
+    if os.environ.get("METBOOK_PHONE") == "1":
+        # PHONE MODE (start it with phone.bat): other devices on your Wi-Fi can open the app.
+        # host="0.0.0.0" means "listen on every network address of this computer", not just
+        # this computer itself. Because other devices can now reach it, debug is OFF: the
+        # debug mode has a console that can run code, and it must never be reachable
+        # from the network. (The price: no automatic restart when you save a file.)
+        # Without debug mode, Flask reads each page template (templates/*.html) only once, when
+        # it starts. This setting makes it read them again when they change, so a change in an HTML
+        # file shows up with a refresh. (A change in app.py or database.py still needs a restart.)
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+        address = find_lan_address()
+        print()
+        print("  PHONE MODE: Metbook can be opened from other devices on this Wi-Fi.")
+        print("  There is no login, so only use this on a network you trust (your home).")
+        if address:
+            print(f"  On your phone, open:  http://{address}:5000")
+        print()
+        app.run(host="0.0.0.0", debug=False)
+    else:
+        # NORMAL MODE: only this computer can open the app (http://localhost:5000).
+        # debug=True gives helpful error pages and restarts the server automatically
+        # whenever you save a change to this file.
+        app.run(debug=True)

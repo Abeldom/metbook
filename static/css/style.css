@@ -82,18 +82,29 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 @media (min-width: 720px) { .hero { grid-template-columns: 1.3fr 1fr; } }
 
 /* — people — */
-.people-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+/* The title row: the title at the left (margin-right: auto pushes everything else to the right),
+   then the small counter and the "Add New Contact" button. align-items: center puts the
+   counter and the button level with the middle of the title. */
+.people-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .people-head .page-title { margin-right: auto; }
-.count { margin-bottom: 14px; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin: 16px 0 28px; }
+.add-contact { flex: none; }
+/* The people cards (or the "No one matches" box) start 20px below whatever is above them:
+   the "Advanced search" button or the "N people found" line. */
+.people-grid, .no-results { margin-top: 20px; }
 
-/* Search box: the magnifier icon and the × button sit on top of the input
-   (position: absolute), and the input gets extra padding on both sides for them */
+/* Search bar: ONE bar. The magnifier icon, the × button and the "Search" button all sit on top of
+   the input (position: absolute); the input gets extra padding on both sides, so the text never
+   goes under them. --submit-w is the width of the Search button; the × sits just left of it.
+   The Search button is inset 4px from the edges of the bar, so it looks like a pill inside. */
 .search { display: flex; gap: 10px; margin-top: 16px; }
-.search-field { position: relative; flex: 1; min-width: 0; }
+.search-field { --submit-w: 80px; position: relative; flex: 1; min-width: 0; }
 .search .input {
-  width: 100%; padding-left: 44px; padding-right: 46px;
+  width: 100%; padding-left: 44px; padding-right: calc(var(--submit-w) + 52px);
   -webkit-appearance: none; appearance: none;
+}
+.search-submit {
+  position: absolute; right: 4px; top: 4px; bottom: 4px; width: var(--submit-w);
+  min-height: 0; padding: 0; justify-content: center; font-size: 14px;
 }
 /* Hide the browser's own × (we have our own, which looks the same everywhere) */
 .search .input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
@@ -102,35 +113,27 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   color: var(--color-neutral-700); pointer-events: none;
 }
 .search-clear {
-  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  position: absolute; right: calc(var(--submit-w) + 8px); top: 50%; transform: translateY(-50%);
   width: 36px; height: 36px; border-radius: 999px;
   display: flex; align-items: center; justify-content: center;
   color: var(--color-neutral-700);
 }
 .search-clear:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
-/* "3 people found" below the "Sort by" row: a big accent-colored number + normal text.
-   align-items: baseline lines the big number and the small words up on the same bottom line.
-   (The toolbar above has margin-bottom: 28px, so this sits a little closer to the cards: margin-top: -14px.) */
-.search-result { display: flex; align-items: baseline; gap: 8px; margin: -14px 4px 18px; font-size: 17px; color: var(--color-neutral-800); }
+/* "3 people found": a line of its own below the "Sort by" / "Show" buttons, at the left.
+   An accent-colored number + normal text. align-items: baseline lines the number and the
+   small words up on the same bottom line. */
+.search-result { display: flex; align-items: baseline; gap: 6px; margin: 14px 4px 0; font-size: 14px; color: var(--color-neutral-800); white-space: nowrap; }
 .search-result[hidden] { display: none; }
 .search-result-count {
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 30px; line-height: 1; color: var(--color-accent-700);
+  font-size: 22px; line-height: 1; color: var(--color-accent-700);
 }
-/* Results are live while you type, so the Search button isn't needed on a computer:
-   Enter is enough. On a phone (a narrow screen, or a touchscreen) it stays visible:
-   tapping it closes the keyboard so you can see the results.
-   (min-width: 601px) and (pointer: fine) = a wide screen with a mouse. Only there it's hidden.
-   The "js" class is set in the page head, before anything is drawn, so the button is
-   never seen even for a moment. Without JavaScript it stays, because then you need it.
-   (To show it on a computer too, delete the second @media block below.) */
-/* On a phone the button is a bit smaller, so the box keeps room for its hint text */
+/* The Search button is always visible, on every screen: it runs the whole search, including
+   the label buttons you have ticked (they don't search by themselves).
+   On a phone the button is a bit narrower, so the box keeps room for what you type. */
 @media (max-width: 600px) {
-  .search-submit { padding-left: 14px; padding-right: 14px; font-size: 14px; }
-}
-@media (min-width: 601px) and (pointer: fine) {
-  .search.is-live .search-submit,
-  .js .search.live-search .search-submit { display: none; }
+  .search-field { --submit-w: 68px; }
+  .search-submit { font-size: 13px; }
 }
 /* All the button rows on the People page (Search in, Filter by label, Sort by, Show) are
    the same size: 36px high, 14px text. The .seg frame has a 1px border above and below,
@@ -165,6 +168,13 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   display: flex; align-items: center; justify-content: center;
 }
 .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* A person WITHOUT a picture: the green box is a low strip (64px) instead of a big 4:3 box, so
+   the card is much smaller and many more people fit on the screen. A person with a picture
+   keeps the big photo. align-items: start on the grid: a small card stays small, it isn't
+   stretched to the height of a photo card beside it in the same row. */
+.person.no-photo .person-photo { aspect-ratio: auto; height: 64px; margin-bottom: 4px; }
+.person.no-photo .person-photo svg { width: 30px; height: 30px; }
+.people-grid { align-items: start; }
 .person > :not(.person-photo) { padding: 0 6px; }
 .person-notes {
   font-size: 13.5px; line-height: 1.45; color: var(--color-neutral-800); margin: 2px 0 0;
@@ -182,15 +192,24 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 }
 .person-name { font-size: 18px; line-height: 1.15; }
 .person-date { font-size: 12.5px; color: var(--color-neutral-700); }
-.person.add {
-  background: transparent; box-shadow: none; justify-content: center; min-height: 180px;
-  border: 2px dashed var(--color-neutral-400); color: var(--color-accent-700);
-  align-items: center; text-align: center; gap: 10px;
-}
 /* "Show more" button under the cards, in the middle */
 .show-more-row { display: flex; justify-content: center; margin-top: 28px; }
 .show-more-left { font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-700); }
-.person.add:hover { background: var(--color-accent-100); border-color: var(--color-accent); color: var(--color-accent-800); }
+
+/* On a phone (600px wide or less): always exactly 2 people per row, a bit smaller.
+   minmax(0, 1fr) lets a column shrink below the width of its content, so a long
+   name wraps instead of pushing the cards wider than the screen.
+   (This block comes AFTER the normal card rules above on purpose: when two rules
+   are equally strong, the later one wins.) */
+@media (max-width: 600px) {
+  .people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .person { padding: 8px 8px 12px; gap: 4px; }
+  .person-photo { margin-bottom: 4px; }
+  .person > :not(.person-photo) { padding: 0 2px; }
+  .person-name { font-size: 15px; overflow-wrap: anywhere; }
+  .person-notes { font-size: 12.5px; }
+  .person-date { font-size: 12px; }
+}
 
 .avatar {
   width: 104px; height: 104px; flex: none; border-radius: 999px; overflow: hidden;
@@ -376,7 +395,7 @@ input[type="file"]::file-selector-button {
 }
 
 /* — "Show:" switches on the People page — */
-/* margin-right: auto pushes the "Add New Contact" button to the far right */
+/* The "Show:" row (inside the "Advanced search" fold) */
 .view-options { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-right: auto; }
 /* "Sort by:" and the A-Z / First met buttons side by side */
 .sort-options { display: flex; align-items: center; gap: 8px; }
@@ -495,30 +514,118 @@ body.lightbox-open { overflow: hidden; }
 }
 /* The row under the label list: "Any of these | All of these" and "Clear labels" */
 .label-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-/* "Clear labels" is a white pill like the other label buttons (from .label-filter a), but not
-   filled, and a little quieter */
-.label-filter .label-clear { color: var(--color-neutral-700); }
-.label-filter .label-clear:hover { color: var(--color-accent-800); }
+.label-filter-actions[hidden], .label-match[hidden] { display: none; }
 /* On a narrow phone the title gets its own line above the buttons */
 @media (max-width: 600px) {
   .label-filter-row { flex-direction: column; gap: 2px; }
   .label-filter-row .label-filter-title { line-height: 1.4; }
 }
-.label-filter a {
+
+/* A label button is a checkbox (hidden) with a pill next to it, like the "Search in" buttons.
+   Ticking it only marks it: nothing is searched until you press the Search button.
+   white = not chosen, filled dark brown = chosen (no ✓: it would make the button wider) */
+.label-chip-box { cursor: pointer; }
+.label-chip-box input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.label-chip {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; min-height: 36px;
   border-radius: 999px; border: 1px solid var(--color-divider);
   background: var(--color-neutral-100);   /* the same white as the "Search in" and "Show" buttons */
   font-size: 14px; color: var(--color-text);
 }
-.label-filter a:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
-.label-filter a[aria-current="true"] {
+.label-chip-box:hover .label-chip { background: var(--color-accent-100); color: var(--color-accent-800); }
+.label-chip-box input:checked + .label-chip {
   background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-neutral-100);
 }
+.label-chip-box input:focus-visible + .label-chip { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .label-filter-count { font-size: 12px; opacity: .75; }
-/* A chosen label is shown by its fill color only: adding a ✓ would make it wider */
-/* "Any of these | All of these": the same size as the label pills next to it */
-/* (.label-filter a above also styles these as pills; inside the frame they must be plain,
-   34px high, so the whole frame is 36px like everything else) */
-.label-filter .label-match a { padding: 0 16px; min-height: 34px; font-size: 14px; border: 0; border-radius: 0; }
-.label-filter .label-match a + a { border-left: 1px solid var(--color-divider); }
+
+/* "Any of these | All of these": two radio buttons in a frame, 36px high like everything else
+   (a 1px border + 34px buttons). The look of a chosen one is the same dark brown. */
+.label-match .seg-opt {
+  display: inline-flex; align-items: center; min-height: 34px; padding: 0 16px; font-size: 14px;
+  color: var(--color-text); cursor: pointer;
+}
+.label-match .seg-opt:has(input:checked) { background: var(--color-accent-700); color: var(--color-neutral-100); }
+.label-match .seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+
+/* "Clear labels": a white pill, a little quieter than the label buttons. It un-ticks them all
+   (the page doesn't search until you press Search). */
+.label-clear {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; min-height: 36px; cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--color-divider); background: var(--color-neutral-100);
+  font: inherit; font-size: 14px; color: var(--color-neutral-700);
+}
+.label-clear:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
 .form-actions .btn { flex: 1 1 160px; }
+
+/* Phone: smaller buttons in the search menu (Search in, Filter by label, Sort by, Show).
+   On a computer they're 36px high with 14px text; on a phone (600px or less) 30px and 13px,
+   so more of them fit on a line and the menu takes less of the screen.
+   This block is at the END of the file on purpose: when two rules are equally strong,
+   the later one wins. */
+@media (max-width: 600px) {
+  .scope-option span, .view-option span { min-height: 30px; padding: 3px 11px; font-size: 13px; }
+  .label-chip, .label-clear { min-height: 30px; padding: 3px 11px; font-size: 13px; gap: 4px; }
+  .label-filter-count { font-size: 11px; }
+  /* The frame of a "seg" has a 1px border, so its buttons are 28px: 30px in total */
+  .seg a, .label-match .seg-opt { min-height: 28px; padding: 0 12px; font-size: 13px; }
+  /* The title row on a phone: no "My Contacts" title, only the "Add New Contact" button, in the
+     middle. The title is hidden in a way that keeps it for screen readers (they still hear
+     it): it is shrunk to a 1px box, clipped, and moved out of the way. */
+  .people-head { justify-content: center; }
+  .people-head .page-title {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .add-contact { min-height: 34px; padding: 5px 14px; font-size: 13px; }
+  .scope-options, .view-options, .sort-options { gap: 5px; }
+  .view-options-title, .label-filter-title { font-size: 13px; }
+  /* 2 rows of 30px buttons + 1 gap of 6px + 2 x 2px padding = 70px */
+  .label-chips { gap: 6px; max-height: 70px; }
+}
+
+/* Phone: a more compact top of the page. The logo (icon + "Metbook" + the little tagline) is
+   smaller, so the menu (Home / About / People) fits on the same line, at the upper right.
+   The tagline wraps onto two lines (max-width). There's also less empty space above and below,
+   so "Your Contacts" and the content start higher. On a very small phone that is too narrow,
+   the menu still wraps onto its own line (the header has flex-wrap: wrap).
+   (At the end of the file, so these rules win over the ones above.) */
+@media (max-width: 600px) {
+  .site-header { padding: 10px 20px 2px; gap: 6px 8px; }
+  .brand { gap: 6px; min-width: 0; }
+  .brand-mark { width: 22px; height: 22px; }
+  .brand-mark svg { width: 12px; height: 12px; }
+  .brand-name { font-size: 14px; }
+  .brand-sub { display: block; font-size: 9px; line-height: 1.2; max-width: 88px; }   /* block: so max-width works */
+  .site-nav { gap: 1px; flex: none; }
+  .site-nav a { padding: 4px 8px; font-size: 13px; }
+  main { padding-top: 4px; }
+  .page-title { margin-top: 6px; }
+}
+
+/* "Advanced search": a fold that hides Search in, Filter by label and Sort by until you tap it.
+   The line you tap (the <summary>) is a white pill like the other buttons; the options are in a
+   framed box below it. list-style: none removes the little triangle of <details>. */
+.advanced-search { margin-top: 12px; }
+.advanced-toggle {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+  min-height: 36px; padding: 6px 14px; border-radius: 999px;
+  border: 1px solid var(--color-divider); background: var(--color-neutral-100);
+  font-size: 14px; color: var(--color-text); user-select: none;
+}
+.advanced-toggle::-webkit-details-marker { display: none; }
+.advanced-toggle:hover { border-color: var(--color-accent-500); }
+.advanced-toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.advanced-chevron { transition: transform .15s; }
+.advanced-search[open] .advanced-chevron { transform: rotate(180deg); }
+.advanced-body {
+  display: grid; gap: 14px; margin-top: 10px; padding: 14px;
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+}
+/* The rows already had their own space above them: inside the box the gap above does it */
+.advanced-body > * { margin-top: 0; }
+@media (max-width: 600px) {
+  .advanced-toggle { min-height: 30px; padding: 3px 11px; font-size: 13px; }
+  .advanced-body { padding: 10px; gap: 10px; }
+}
+

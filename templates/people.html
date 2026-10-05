@@ -12,16 +12,11 @@
     {% set label_param = label_ids or none %}
     {% set match_param = match if label_ids|length > 1 else none %}
 
-    {# The small counter next to the title: how many people there are
-       (the search result count has its own, bigger line under the "Sort by" row) #}
+    {# The title row: the title at the left, the "Add New Contact" button (the main action of this
+       page) at the right. There is no counter ("1114 saved") any more. #}
     <div class="people-head">
-        <h1 class="page-title">Your Contacts</h1>
-        <span class="tag tag-accent count">
-            {{ contacts|length }}
-            {% if current_labels|length == 1 %}in {{ current_labels[0].name }}
-            {% elif current_labels %}in {{ current_labels|length }} labels
-            {% else %}saved{% endif %}
-        </span>
+        <h1 class="page-title">My Contacts</h1>
+        <a class="btn btn-primary add-contact" href="{{ url_for('add_contact_page', label=label_param) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add New Contact</a>
     </div>
 
     {# The search box is ALWAYS there, even when no one is shown (no contacts yet, or no one
@@ -39,13 +34,31 @@
             <a class="search-clear" href="{{ url_for('people', sort=current_sort, label=label_param, match=match_param) }}" aria-label="Clear search" {% if not search %}hidden{% endif %}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </a>
+            {# The Search button sits INSIDE the search box, at its right end: one single bar #}
+            <button class="btn btn-primary search-submit" type="submit">Search</button>
         </div>
-        {# Hidden: keep the chosen sort order and labels when you search #}
+        {# Hidden: keep the chosen sort order when you search. (The label buttons, the "any/all"
+           choice and the "Search in" buttons are checkboxes and radio buttons outside this form
+           in the page, but they belong to it: form="people-search".) #}
         <input type="hidden" name="sort" value="{{ current_sort }}">
-        {% for label_id in label_ids %}<input type="hidden" name="label" value="{{ label_id }}">{% endfor %}
-        {% if match_param %}<input type="hidden" name="match" value="{{ match_param }}">{% endif %}
-        <button class="btn btn-secondary search-submit" type="submit">Search</button>
     </form>
+
+    {# "Advanced search": a fold (<details> is a built-in HTML toggle) that keeps the rarely used
+       options out of the way: Search in, Filter by label, Sort by and Show. Tap it and they show.
+       It starts open when something is set (a label chosen, not searching everywhere, sorted by
+       First met), so you can see why the list looks like it does. (active_count is only used
+       for that.)
+       static/js/advanced-search.js remembers if you opened or closed it yourself. #}
+    {% set active_count = (1 if label_ids else 0)
+                          + (1 if search_scopes_changed else 0)
+                          + (1 if current_sort != 'name' else 0) %}
+    <details class="advanced-search" {% if active_count %}open{% endif %}>
+    <summary class="advanced-toggle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+        Advanced search
+        <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </summary>
+    <div class="advanced-body">
 
     {# "Search in:" switches: where the search looks. They're checkboxes styled as pills
        (like "Show:" below, but a different class, so people-view.js leaves them alone).
@@ -65,12 +78,14 @@
     </div>
 
 
-    {# Label filter: one link per label. Tapping a label adds it to the chosen ones,
-       tapping a chosen one takes it out again. With none chosen, everyone is shown.
-       They're normal links: the page loads again with ?label=3&label=5 and the server
-       leaves out everyone else.
-       toggled = the labels you'd have after tapping this one:
-         chosen already -> the list without it (reject)   |   not chosen -> the list plus it #}
+    {# Label filter: one checkbox per label (styled as a pill, like "Search in"). Tapping a label
+       only ticks or un-ticks it: NOTHING is searched yet. The labels you have ticked are sent
+       together with the search text when you press the "Search" button (or Enter):
+       /people?q=anna&label=3&label=5&match=any
+       form="people-search" makes the checkboxes part of the search form up above.
+       With nothing ticked, everyone is shown.
+       static/js/label-filter.js shows "Any / All" (when 2 or more are ticked) and "Clear labels"
+       (when 1 or more is ticked). #}
     {% if all_labels %}
     <nav class="label-filter" aria-label="Filter by label">
         <div class="label-filter-row">
@@ -78,45 +93,45 @@
         {# .label-chips: with more than two rows of labels it stays two rows high and scrolls #}
         <div class="label-chips">
         {% for label in all_labels %}
-        {% set chosen = label.id in label_ids %}
-        {% set toggled = (label_ids|reject('equalto', label.id)|list) if chosen else (label_ids + [label.id]) %}
-        <a class="label-chip" href="{{ url_for('people', sort=current_sort, q=search or none, label=toggled or none, match=match if toggled|length > 1 else none) }}"
-           {% if chosen %}aria-current="true"{% endif %}>
-            {{ label.name }} <span class="label-filter-count">{{ label.contact_count }}</span>
-        </a>
+        <label class="label-chip-box">
+            <input type="checkbox" name="label" value="{{ label.id }}" form="people-search"
+                   {% if label.id in label_ids %}checked{% endif %}>
+            <span class="label-chip">{{ label.name }} <span class="label-filter-count">{{ label.contact_count }}</span></span>
+        </label>
         {% endfor %}
         </div>
         </div>
 
-        {# Only while a label is chosen: the "Clear labels" button takes them all off at once
-           (no label in the address = everyone is shown). With 2 or more labels chosen you can
-           also combine them with "any" or "all". #}
-        {% if label_ids %}
-        <div class="label-filter-actions">
-            {% if label_ids|length > 1 %}
-            <div class="seg label-match" role="group" aria-label="How to combine the chosen labels">
-                <a href="{{ url_for('people', sort=current_sort, q=search or none, label=label_ids, match='any') }}" {% if match == 'any' %}aria-current="true"{% endif %}>Any of these</a>
-                <a href="{{ url_for('people', sort=current_sort, q=search or none, label=label_ids, match='all') }}" {% if match == 'all' %}aria-current="true"{% endif %}>All of these</a>
+        <div class="label-filter-actions" {% if not label_ids %}hidden{% endif %}>
+            <div class="seg label-match" role="radiogroup" aria-label="How to combine the chosen labels"
+                 {% if label_ids|length < 2 %}hidden{% endif %}>
+                <label class="seg-opt">
+                    <input type="radio" name="match" value="any" form="people-search" {% if match != 'all' %}checked{% endif %}>
+                    <span>Any of these</span>
+                </label>
+                <label class="seg-opt">
+                    <input type="radio" name="match" value="all" form="people-search" {% if match == 'all' %}checked{% endif %}>
+                    <span>All of these</span>
+                </label>
             </div>
-            {% endif %}
-            <a class="label-clear" href="{{ url_for('people', sort=current_sort, q=search or none) }}">
+            {# type="button": it only un-ticks the labels (label-filter.js); it doesn't send the form #}
+            <button type="button" class="label-clear">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 Clear labels
-            </a>
+            </button>
         </div>
-        {% endif %}
     </nav>
     {% endif %}
 
-    <div class="toolbar">
-        {# q=search or none: keep the search when changing the sort order
+        {# "Sort by": also inside the Advanced search fold.
+           q=search or none: keep the search when changing the sort order
            (url_for leaves out values that are None, so there's no empty ?q=) #}
         <div class="sort-options">
-        <span class="view-options-title">Sort by:</span>
-        <div class="seg" role="group" aria-label="Sort contacts">
-            <a href="{{ url_for('people', sort='name', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'name' %}aria-current="true"{% endif %}>A–Z (Name)</a>
-            <a href="{{ url_for('people', sort='firstmet', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'firstmet' %}aria-current="true"{% endif %}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> First met</a>
-        </div>
+            <span class="view-options-title">Sort by:</span>
+            <div class="seg" role="group" aria-label="Sort contacts">
+                <a href="{{ url_for('people', sort='name', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'name' %}aria-current="true"{% endif %}>A–Z (Name)</a>
+                <a href="{{ url_for('people', sort='firstmet', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'firstmet' %}aria-current="true"{% endif %}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> First met</a>
+            </div>
         </div>
 
         {# "Show:" switches. Each is a checkbox (styled as a pill, like the label picker);
@@ -138,18 +153,21 @@
             {% endfor %}
         </div>
         {% endif %}
-        <a class="btn btn-primary" href="{{ url_for('add_contact_page', label=label_param) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add New Contact</a>
-    </div>
+
+    </div>{# end of .advanced-body #}
+    </details>
 
     {% if contacts %}
-        {# "3 people found": right below the "Sort by" row, only while searching (and not
-           when nobody matches: then the "No one matches" box below says it).
-           aria-live="polite": screen readers read the new number out when it changes. #}
-        <p class="search-result" aria-live="polite" {% if not search or shown == 0 %}hidden{% endif %}>
-            <strong class="search-result-count">{{ shown }}</strong>
-            <span class="search-result-text">{{ 'person' if shown == 1 else 'people' }} found</span>
-        </p>
+    {# "3 people found": on a line of its own under the "Advanced search" button, at the left, only
+       while searching (and not when nobody matches: then the "No one matches" box below says it).
+       aria-live="polite": screen readers read the new number out when it changes. #}
+    <p class="search-result" aria-live="polite" {% if not search or shown == 0 %}hidden{% endif %}>
+        <strong class="search-result-count">{{ shown }}</strong>
+        <span class="search-result-text">{{ 'person' if shown == 1 else 'people' }} found</span>
+    </p>
+    {% endif %}
 
+    {% if contacts %}
         <div class="card empty no-results" {% if not (search and shown == 0) %}hidden{% endif %}>
             <span class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
             <h2>No one matches “<span class="no-results-query">{{ search }}</span>”</h2>
@@ -168,7 +186,8 @@
                places chosen in "Search in:". "events" = notes and labels of the meetings.
                |select drops the empty ones, |join glues the rest with spaces. #}
             {# id="person-79": every card has its own id #}
-            <a class="person" id="person-{{ contact.id }}" href="{{ url_for('view_contact', contact_id=contact.id) }}"
+            {# no-photo: a person without a picture gets a smaller card (the green box is low) #}
+            <a class="person{% if not contact.picture_path %} no-photo{% endif %}" id="person-{{ contact.id }}" href="{{ url_for('view_contact', contact_id=contact.id) }}"
                data-name="{{ contact.name|simplify }}"
                data-notes="{{ contact.notes|simplify }}"
                data-events="{{ [contact.meeting_notes, contact.meeting_label_names]|select|join(' ')|simplify }}"
@@ -202,10 +221,6 @@
                 {% if contact.notes %}<p class="person-notes">{{ contact.notes }}</p>{% endif %}
             </a>
             {% endfor %}
-            <a class="person add" href="{{ url_for('add_contact_page', label=label_param) }}">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                <span>Add someone</span>
-            </a>
         </div>
 
         {# "Show more": a normal link to the same page with a bigger ?limit, so it also works
@@ -226,6 +241,7 @@
         <script type="module" src="{{ url_for('static', filename='js/card-labels.js') }}"></script>
         <script type="module" src="{{ url_for('static', filename='js/people-view.js') }}"></script>
         <script type="module" src="{{ url_for('static', filename='js/keep-scroll.js') }}"></script>
+        <script type="module" src="{{ url_for('static', filename='js/advanced-search.js') }}"></script>
     {% elif label_ids %}
         {# Only possible with "All of these": nobody has every one of the chosen labels #}
         <div class="card empty">
@@ -242,5 +258,10 @@
             <h2>No contacts yet</h2>
             <p>Click "Add New Contact" to get started!</p>
         </div>
+    {% endif %}
+
+    {# Not inside the {% if contacts %} above: the label buttons also exist when no one is shown #}
+    {% if all_labels %}
+    <script type="module" src="{{ url_for('static', filename='js/label-filter.js') }}"></script>
     {% endif %}
 {% endblock %}

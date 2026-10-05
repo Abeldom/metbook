@@ -11,7 +11,7 @@
 const form = document.querySelector(".search");
 const input = form.querySelector('input[name="q"]');
 const clearButton = form.querySelector(".search-clear");
-// Every real card has data-name (the "Add someone" card doesn't)
+// Every person's card has data-name
 const cards = document.querySelectorAll(".person[data-name]");
 // The "Search in:" switches: Names / Notes / Events / Labels
 const scopeBoxes = [...document.querySelectorAll(".scope-option input")];
@@ -19,10 +19,9 @@ const scopeBoxes = [...document.querySelectorAll(".scope-option input")];
 const result = document.querySelector(".search-result");
 const resultCount = document.querySelector(".search-result-count");
 const resultText = document.querySelector(".search-result-text");
-const noResults = document.querySelector(".no-results");
-const noResultsQuery = document.querySelector(".no-results-query");
-// The sort buttons and the label buttons: they should keep the search text
-const linksToUpdate = document.querySelectorAll(".seg a, .label-filter a");
+const noResults = document.querySelector(".no-results");const noResultsQuery = document.querySelector(".no-results-query");
+// The sort buttons: they should keep the search text
+const linksToUpdate = document.querySelectorAll(".seg a");
 const grid = document.querySelector(".people-grid");
 const moreRow = document.querySelector(".show-more-row");
 const moreButton = document.querySelector(".show-more");
@@ -121,7 +120,8 @@ function saveScopes() {
     box.disabled = on.length === 1 && box.checked;
   }
   // Remember the choice in a cookie ("name.notes"), so the page opens like this next time
-  document.cookie = `search_in=${on.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
+  // (The "_2": the older cookie "search_in" held the old default and is ignored.)
+  document.cookie = `search_in_2=${on.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
 for (const box of scopeBoxes) {
@@ -131,8 +131,7 @@ for (const box of scopeBoxes) {
     update();
   });
 }
-// A locked checkbox isn't sent with a form, but the form doesn't send anything while the
-// script runs (see "submit" below), so that doesn't matter.
+// A locked (disabled) checkbox isn't sent with a form: the "submit" below unlocks them first.
 for (const box of scopeBoxes) {
   box.disabled = chosenScopes().length === 1 && box.checked;
 }
@@ -145,11 +144,14 @@ moreButton.addEventListener("click", (event) => {
   update();
 });
 
-// Results are already live, so Enter and the "Search" button don't need to reload the page.
-// Instead we just close the phone keyboard by taking the focus away.
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  input.blur();
+// The "Search" button (or Enter) runs the WHOLE search: the page loads again, and the server
+// uses the search text AND the label buttons you ticked (they never search by themselves).
+// The text still filters live while you type; this is the step that also applies the labels.
+// Before the form is sent, unlock the locked "Search in" checkbox: a locked one isn't sent.
+form.addEventListener("submit", () => {
+  for (const box of scopeBoxes) {
+    box.disabled = false;
+  }
 });
 
 // The × button is a normal link (so it also works without JavaScript),
