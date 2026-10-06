@@ -1,36 +1,44 @@
-// advanced-search.js - remembers whether you opened or closed the "Advanced search" fold.
+// advanced-search.js - the "Filter" and "View" buttons under the search bar.
 //
-// The server opens the fold by itself when an option is active (a label chosen, sorted by
+// Each button opens or closes its own panel (Filter: Search in, Filter by label; View: Sort by,
+// Show, Layout). A panel is open when it has the class "is-open"; the CSS hides the others.
+// (Without JavaScript the CSS shows both panels, so everything can still be reached.)
+//
+// The server opens a panel by itself when something in it is set (a label chosen, sorted by
 // First met, ...). But tapping a label reloads the page, and when the last label is taken
-// off, nothing is active any more, so the server would close it under your fingers.
-// So we remember your own choice for this browser tab (sessionStorage) and use it.
+// off, nothing is set any more, so the server would close the panel under your fingers.
+// So we remember what YOU opened or closed (for this browser tab: sessionStorage) and use that.
 
-const fold = document.querySelector(".advanced-search");
-const KEY = "advancedSearchOpen";
+for (const button of document.querySelectorAll(".advanced-toggle")) {
+  const panel = document.getElementById(button.getAttribute("aria-controls"));
+  const key = `menuOpen-${button.dataset.menu}`;
 
-if (fold) {
+  // Show or hide the panel, and keep the button's arrow and aria-expanded in step
+  function setOpen(open) {
+    panel.classList.toggle("is-open", open);
+    button.setAttribute("aria-expanded", String(open));
+  }
+
+  // What you chose earlier in this tab wins over what the server decided
   let saved = null;
   try {
-    saved = sessionStorage.getItem(KEY);
+    saved = sessionStorage.getItem(key);
   } catch (error) {
     // storage can be blocked: then the server's choice stays
   }
   if (saved === "1") {
-    fold.open = true;
+    setOpen(true);
   } else if (saved === "0") {
-    fold.open = false;
+    setOpen(false);
   }
 
-  // Only when YOU tap the "Advanced search" line. (The "toggle" event would also fire when the
-  // page loads with the fold already open, and that is not your choice.)
-  // setTimeout: the browser flips fold.open just after the click, so we look a moment later.
-  fold.querySelector("summary").addEventListener("click", () => {
-    setTimeout(() => {
-      try {
-        sessionStorage.setItem(KEY, fold.open ? "1" : "0");
-      } catch (error) {
-        // not important
-      }
-    }, 0);
+  button.addEventListener("click", () => {
+    const open = !panel.classList.contains("is-open");
+    setOpen(open);
+    try {
+      sessionStorage.setItem(key, open ? "1" : "0");
+    } catch (error) {
+      // not important
+    }
   });
 }

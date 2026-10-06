@@ -203,6 +203,10 @@ PAGE_SIZE = 50
 CARD_PARTS = {"name": "Name", "labels": "Labels", "notes": "Notes", "firstmet": "First met"}
 DEFAULT_CARD_PARTS = {"name", "notes"}
 
+# The two layouts of the People cards: {code name: what the button says}.
+LAYOUTS = {"compact": "Compact", "large": "Large"}
+DEFAULT_LAYOUT = "compact"
+
 # The places the search box can look in: {code name: what the switch says}.
 # "events" = the notes and labels of the meetings.
 SEARCH_SCOPES = {"name": "Names", "notes": "Notes", "events": "Events", "labels": "Labels"}
@@ -463,7 +467,15 @@ def people():
     forced_parts = {"firstmet"} if sort_by == "firstmet" else set()
     shown_parts = saved_parts | forced_parts
 
+    # The layout of the cards: "compact" (a round picture at the left of the name) or "large"
+    # (a big picture above the name). Saved in the "people_layout" cookie by people-view.js.
+    # Anything else (no cookie, a made-up value) means the default, compact.
+    layout = request.cookies.get("people_layout")
+    if layout not in LAYOUTS:
+        layout = DEFAULT_LAYOUT
+
     return render_template("people.html", contacts=contacts, current_sort=sort_by,
+                           layouts=LAYOUTS, layout=layout,
                            search=search, matching_ids=matching_ids,
                            all_labels=all_labels, current_labels=current_labels,
                            label_ids=label_ids, match=match,

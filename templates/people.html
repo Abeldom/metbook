@@ -43,22 +43,31 @@
         <input type="hidden" name="sort" value="{{ current_sort }}">
     </form>
 
-    {# "Advanced search": a fold (<details> is a built-in HTML toggle) that keeps the rarely used
-       options out of the way: Search in, Filter by label, Sort by and Show. Tap it and they show.
-       It starts open when something is set (a label chosen, not searching everywhere, sorted by
-       First met), so you can see why the list looks like it does. (active_count is only used
-       for that.)
-       static/js/advanced-search.js remembers if you opened or closed it yourself. #}
-    {% set active_count = (1 if label_ids else 0)
-                          + (1 if search_scopes_changed else 0)
-                          + (1 if current_sort != 'name' else 0) %}
-    <details class="advanced-search" {% if active_count %}open{% endif %}>
-    <summary class="advanced-toggle">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-        Advanced search
-        <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-    </summary>
-    <div class="advanced-body">
+    {# Two buttons under the search bar, each opening its own panel below:
+         "Filter" = which people do I get?  -> Search in, Filter by label
+         "View"   = how do I see them?      -> Sort by, Show, Layout
+       Each panel starts open when something in it is set (Filter: a label chosen, or not
+       searching names only; View: sorted by First met), so you can see why the list looks like
+       it does. static/js/advanced-search.js opens and closes the panels when you tap the buttons,
+       and remembers what you opened or closed yourself. Without JavaScript both panels simply
+       stay open. (is-open is the class that means "open", aria-expanded tells screen readers.) #}
+    {% set filter_open = label_ids or search_scopes_changed %}
+    {% set view_open = current_sort != 'name' %}
+    <div class="search-menus">
+        <button type="button" class="advanced-toggle" data-menu="filter" aria-controls="panel-filter" aria-expanded="{{ 'true' if filter_open else 'false' }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
+            Filter
+            <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <button type="button" class="advanced-toggle" data-menu="view" aria-controls="panel-view" aria-expanded="{{ 'true' if view_open else 'false' }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+            View
+            <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+    </div>
+
+    {# The FILTER panel #}
+    <div class="advanced-body menu-panel {% if filter_open %}is-open{% endif %}" id="panel-filter">
 
     {# "Search in:" switches: where the search looks. They're checkboxes styled as pills
        (like "Show:" below, but a different class, so people-view.js leaves them alone).
@@ -123,7 +132,12 @@
     </nav>
     {% endif %}
 
-        {# "Sort by": also inside the Advanced search fold.
+    </div>{# end of the FILTER panel #}
+
+    {# The VIEW panel #}
+    <div class="advanced-body menu-panel {% if view_open %}is-open{% endif %}" id="panel-view">
+
+        {# "Sort by": in the View panel.
            q=search or none: keep the search when changing the sort order
            (url_for leaves out values that are None, so there's no empty ?q=) #}
         <div class="sort-options">
@@ -152,18 +166,35 @@
             </label>
             {% endfor %}
         </div>
+
+        {# "Layout:" two buttons (radio buttons in a frame, like "Any / All"): Compact = a round
+           picture at the left of the name, Large = a big picture above the name.
+           static/js/people-view.js switches the cards on the spot and saves the choice in a cookie.
+           They aren't part of the search form. #}
+        <div class="layout-options">
+            <span class="view-options-title">Layout:</span>
+            <div class="seg layout-seg" role="radiogroup" aria-label="Layout of the cards">
+                {% for code, title in layouts.items() %}
+                <label class="seg-opt">
+                    <input type="radio" name="layout" value="{{ code }}" {% if code == layout %}checked{% endif %}>
+                    <span>{{ title }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
         {% endif %}
 
-    </div>{# end of .advanced-body #}
-    </details>
+    </div>{# end of the VIEW panel #}
 
     {% if contacts %}
-    {# "3 people found": on a line of its own under the "Advanced search" button, at the left, only
-       while searching (and not when nobody matches: then the "No one matches" box below says it).
+    {# The count, on a line of its own under the Filter / View buttons, at the left:
+       "1114 contacts" while the search box is empty (with a label filter on: how many have it),
+       "3 people found" while you search. It is hidden only when a search finds nobody (then the
+       "No one matches" box below says it). people-search.js changes it as you type.
        aria-live="polite": screen readers read the new number out when it changes. #}
-    <p class="search-result" aria-live="polite" {% if not search or shown == 0 %}hidden{% endif %}>
+    <p class="search-result" aria-live="polite" {% if search and shown == 0 %}hidden{% endif %}>
         <strong class="search-result-count">{{ shown }}</strong>
-        <span class="search-result-text">{{ 'person' if shown == 1 else 'people' }} found</span>
+        <span class="search-result-text">{% if search %}{{ 'person' if shown == 1 else 'people' }} found{% else %}{{ 'contact' if shown == 1 else 'contacts' }}{% endif %}</span>
     </p>
     {% endif %}
 
@@ -178,7 +209,7 @@
            and the CSS hides that part on all cards #}
         {# data-limit / data-page-size: how many cards are showing, and how many "Show more" adds.
            people-search.js reads them from here. #}
-        <div class="people-grid{% for part in card_parts if part not in shown_parts %} hide-{{ part }}{% endfor %}"
+        <div class="people-grid layout-{{ layout }}{% for part in card_parts if part not in shown_parts %} hide-{{ part }}{% endfor %}"
              data-limit="{{ limit }}" data-page-size="{{ page_size }}">
             {% for contact in contacts %}
             {# data-name / data-notes / data-events / data-labels: the four places this card can be
@@ -186,8 +217,10 @@
                places chosen in "Search in:". "events" = notes and labels of the meetings.
                |select drops the empty ones, |join glues the rest with spaces. #}
             {# id="person-79": every card has its own id #}
-            {# no-photo: a person without a picture gets a smaller card (the green box is low) #}
-            <a class="person{% if not contact.picture_path %} no-photo{% endif %}" id="person-{{ contact.id }}" href="{{ url_for('view_contact', contact_id=contact.id) }}"
+            {# A compact card: a round picture (or the green circle with the person icon) at the left,
+               and at its right (.person-body) the name and, if switched on, the date, the labels
+               and the notes. Every card has about the same size. #}
+            <a class="person" id="person-{{ contact.id }}" href="{{ url_for('view_contact', contact_id=contact.id) }}"
                data-name="{{ contact.name|simplify }}"
                data-notes="{{ contact.notes|simplify }}"
                data-events="{{ [contact.meeting_notes, contact.meeting_label_names]|select|join(' ')|simplify }}"
@@ -199,9 +232,10 @@
                         {# The small copy (/thumbs/...): the People page shows many pictures at once #}
                         <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}" loading="lazy">
                     {% else %}
-                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
                     {% endif %}
                 </div>
+                <div class="person-body">
                 <div class="person-name">{{ contact.name }}</div>
                 {% if contact.first_met %}<div class="person-date">First met {{ contact.first_met|nice_date }}</div>{% endif %}
                 {% if contact.labels %}
@@ -219,6 +253,7 @@
                 </div>
                 {% endif %}
                 {% if contact.notes %}<p class="person-notes">{{ contact.notes }}</p>{% endif %}
+                </div>{# end of .person-body #}
             </a>
             {% endfor %}
         </div>
@@ -241,7 +276,6 @@
         <script type="module" src="{{ url_for('static', filename='js/card-labels.js') }}"></script>
         <script type="module" src="{{ url_for('static', filename='js/people-view.js') }}"></script>
         <script type="module" src="{{ url_for('static', filename='js/keep-scroll.js') }}"></script>
-        <script type="module" src="{{ url_for('static', filename='js/advanced-search.js') }}"></script>
     {% elif label_ids %}
         {# Only possible with "All of these": nobody has every one of the chosen labels #}
         <div class="card empty">
@@ -260,7 +294,9 @@
         </div>
     {% endif %}
 
-    {# Not inside the {% if contacts %} above: the label buttons also exist when no one is shown #}
+    {# Not inside the {% if contacts %} above: the Filter / View buttons and the label buttons
+       also exist when no one is shown #}
+    <script type="module" src="{{ url_for('static', filename='js/advanced-search.js') }}"></script>
     {% if all_labels %}
     <script type="module" src="{{ url_for('static', filename='js/label-filter.js') }}"></script>
     {% endif %}

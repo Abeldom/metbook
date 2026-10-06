@@ -78,11 +78,17 @@ function update() {
   }
 
   // Update the rest of the page.
-  // "3 people found": only while searching, and not when nobody matches
-  // (then the "No one matches" box says it)
-  result.hidden = !query || matching === 0;
+  // The count line. While searching: "3 people found". With the box empty: "1114 contacts"
+  // (with a label filter on, only the people with those labels are on the page, so the
+  // count is theirs). It is hidden only when a search finds nobody
+  // (then the "No one matches" box says it).
+  result.hidden = Boolean(query) && matching === 0;
   resultCount.textContent = matching;
-  resultText.textContent = matching === 1 ? "person found" : "people found";
+  if (query) {
+    resultText.textContent = matching === 1 ? "person found" : "people found";
+  } else {
+    resultText.textContent = matching === 1 ? "contact" : "contacts";
+  }
   noResults.hidden = !(query && matching === 0);
   noResultsQuery.textContent = query;
   clearButton.hidden = !query;

@@ -148,39 +148,36 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .seg a:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); color: var(--color-text); }
 .seg a[aria-current="true"] { background: var(--color-accent-700); color: var(--color-neutral-100); }
 
-/* At most 3 cards per row. Each card must be at least 200px wide AND at least
-   a third of the row: max(200px, a third) picks the bigger of the two.
-   (100% - 40px) / 3 = a third of the row, after the two 20px gaps between cards.
-   So a wide screen fits exactly 3, and a narrow phone fits fewer (1 or 2). */
+/* The people grid: compact cards, at most 3 per row. Each card must be at least 220px wide AND
+   at least a third of the row: max(220px, a third) picks the bigger of the two.
+   (100% - 24px) / 3 = a third of the row, after the two 12px gaps between cards.
+   So a wide screen fits exactly 3, and a narrow window fits fewer. */
 .people-grid {
-  display: grid; gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(max(200px, calc((100% - 40px) / 3)), 1fr));
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(max(220px, calc((100% - 24px) / 3)), 1fr));
 }
+/* A compact card: the round picture at the left, the text (.person-body) at its right.
+   A row of cards is stretched to the same height (the grid's default), so the rows stay even. */
 .person {
-  display: flex; flex-direction: column; gap: 6px; text-align: center;
-  padding: 10px 10px 16px; border-radius: calc(var(--radius-lg) * 1.15);
+  display: flex; align-items: center; gap: 12px; text-align: left; min-height: 68px;
+  padding: 8px 14px 8px 8px; border-radius: 22px;
   background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-sm);
   transition: box-shadow .18s, transform .18s;
 }
+/* The round picture: the photo, or (without one) the calm green circle with the person icon */
 .person-photo {
-  aspect-ratio: 4 / 3; border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 8px;
+  width: 52px; height: 52px; flex: none; border-radius: 50%; overflow: hidden;
   background: var(--color-accent-2-200); color: var(--color-accent-2-800);   /* one calm green for everyone */
   display: flex; align-items: center; justify-content: center;
 }
 .person-photo img { width: 100%; height: 100%; object-fit: cover; }
-/* A person WITHOUT a picture: the green box is a low strip (64px) instead of a big 4:3 box, so
-   the card is much smaller and many more people fit on the screen. A person with a picture
-   keeps the big photo. align-items: start on the grid: a small card stays small, it isn't
-   stretched to the height of a photo card beside it in the same row. */
-.person.no-photo .person-photo { aspect-ratio: auto; height: 64px; margin-bottom: 4px; }
-.person.no-photo .person-photo svg { width: 30px; height: 30px; }
-.people-grid { align-items: start; }
-.person > :not(.person-photo) { padding: 0 6px; }
+/* min-width: 0 lets the text shrink, so a long name wraps instead of widening the card */
+.person-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .person-notes {
-  font-size: 13.5px; line-height: 1.45; color: var(--color-neutral-800); margin: 2px 0 0;
+  font-size: 12.5px; line-height: 1.4; color: var(--color-neutral-800); margin: 0;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.person:hover { color: var(--color-text); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.person:hover { color: var(--color-text); box-shadow: var(--shadow-md); transform: translateY(-2px); }
 /* The card whose id is in the address (#person-79) is where the page scrolls to when you
    come back from a person. It is only scrolled to, not highlighted.
    scroll-margin-top: a little room above the card when the browser scrolls to it. */
@@ -190,25 +187,60 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .person-name, .detail h1 {
   font-family: "Fraunces", Georgia, serif; font-weight: 800; font-variation-settings: "SOFT" 100;
 }
-.person-name { font-size: 18px; line-height: 1.15; }
-.person-date { font-size: 12.5px; color: var(--color-neutral-700); }
+.person-name { font-size: 16px; line-height: 1.2; overflow-wrap: anywhere; }
+.person-date { font-size: 12px; color: var(--color-neutral-700); }
 /* "Show more" button under the cards, in the middle */
 .show-more-row { display: flex; justify-content: center; margin-top: 28px; }
 .show-more-left { font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-700); }
 
-/* On a phone (600px wide or less): always exactly 2 people per row, a bit smaller.
+/* On a phone (600px wide or less): always exactly 2 cards per row, a bit smaller.
    minmax(0, 1fr) lets a column shrink below the width of its content, so a long
    name wraps instead of pushing the cards wider than the screen.
    (This block comes AFTER the normal card rules above on purpose: when two rules
    are equally strong, the later one wins.) */
 @media (max-width: 600px) {
-  .people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .person { padding: 8px 8px 12px; gap: 4px; }
-  .person-photo { margin-bottom: 4px; }
-  .person > :not(.person-photo) { padding: 0 2px; }
-  .person-name { font-size: 15px; overflow-wrap: anywhere; }
-  .person-notes { font-size: 12.5px; }
-  .person-date { font-size: 12px; }
+  .people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .person { gap: 8px; min-height: 56px; padding: 6px 10px 6px 6px; border-radius: 18px; }
+  .person-photo { width: 40px; height: 40px; }
+  .person-photo svg { width: 20px; height: 20px; }
+  .person-name { font-size: 13.5px; }
+  .person-notes { font-size: 11.5px; }
+  .person-date { font-size: 11px; }
+}
+
+/* ---- Layout "large": the big picture above the name (the other layout choice, set under
+   "Advanced search"). The grid gets the class "layout-large" (people-view.js / the server), and
+   these rules turn the compact cards into big ones: a column instead of a row, a 4:3 picture
+   box on top, everything centered. They come after the compact rules and are more specific
+   (two classes), so they win. */
+.people-grid.layout-large {
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(max(200px, calc((100% - 40px) / 3)), 1fr));
+}
+.layout-large .person {
+  flex-direction: column; align-items: stretch; gap: 6px; text-align: center; min-height: 0;
+  padding: 10px 10px 16px; border-radius: calc(var(--radius-lg) * 1.15);
+}
+.layout-large .person-photo {
+  width: auto; height: auto; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); margin-bottom: 8px;
+}
+.layout-large .person-photo svg { width: 44px; height: 44px; }
+.layout-large .person-body { flex: none; padding: 0 6px; }
+.layout-large .person-name { font-size: 18px; line-height: 1.15; }
+.layout-large .person-notes { font-size: 13.5px; line-height: 1.45; margin-top: 2px; }
+.layout-large .person-date { font-size: 12.5px; }
+.layout-large .person-labels { justify-content: safe center; }
+.layout-options { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 600px) {
+  /* large cards on a phone: 2 per row, a little smaller */
+  .people-grid.layout-large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .layout-large .person { padding: 8px 8px 12px; gap: 4px; border-radius: 22px; }
+  .layout-large .person-photo { margin-bottom: 4px; }
+  .layout-large .person-photo svg { width: 32px; height: 32px; }
+  .layout-large .person-body { padding: 0 2px; }
+  .layout-large .person-name { font-size: 15px; }
+  .layout-large .person-notes { font-size: 12.5px; }
+  .layout-large .person-date { font-size: 12px; }
 }
 
 .avatar {
@@ -340,7 +372,7 @@ input[type="file"]::file-selector-button {
    flex: none = a label never gets squeezed narrower than its text. */
 /* "safe center": centered when the labels fit; if they're too wide, they start
    at the left instead, so card-labels.js can measure how much sticks out */
-.person-labels { flex-wrap: nowrap; overflow: hidden; justify-content: safe center; }
+.person-labels { flex-wrap: nowrap; overflow: hidden; justify-content: flex-start; }
 /* No flicker: while the script is still measuring, the labels are invisible but keep
    their space. card-labels.js adds "fitted" when it's done. ("js" class: see base.html;
    without JavaScript the labels just stay visible.) */
@@ -541,12 +573,12 @@ body.lightbox-open { overflow: hidden; }
 
 /* "Any of these | All of these": two radio buttons in a frame, 36px high like everything else
    (a 1px border + 34px buttons). The look of a chosen one is the same dark brown. */
-.label-match .seg-opt {
+.label-match .seg-opt, .layout-seg .seg-opt {
   display: inline-flex; align-items: center; min-height: 34px; padding: 0 16px; font-size: 14px;
   color: var(--color-text); cursor: pointer;
 }
-.label-match .seg-opt:has(input:checked) { background: var(--color-accent-700); color: var(--color-neutral-100); }
-.label-match .seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.label-match .seg-opt:has(input:checked), .layout-seg .seg-opt:has(input:checked) { background: var(--color-accent-700); color: var(--color-neutral-100); }
+.label-match .seg-opt:not(:has(input:checked)):hover, .layout-seg .seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
 
 /* "Clear labels": a white pill, a little quieter than the label buttons. It un-ticks them all
    (the page doesn't search until you press Search). */
@@ -568,7 +600,7 @@ body.lightbox-open { overflow: hidden; }
   .label-chip, .label-clear { min-height: 30px; padding: 3px 11px; font-size: 13px; gap: 4px; }
   .label-filter-count { font-size: 11px; }
   /* The frame of a "seg" has a 1px border, so its buttons are 28px: 30px in total */
-  .seg a, .label-match .seg-opt { min-height: 28px; padding: 0 12px; font-size: 13px; }
+  .seg a, .label-match .seg-opt, .layout-seg .seg-opt { min-height: 28px; padding: 0 12px; font-size: 13px; }
   /* The title row on a phone: no "My Contacts" title, only the "Add New Contact" button, in the
      middle. The title is hidden in a way that keeps it for screen readers (they still hear
      it): it is shrunk to a 1px box, clipped, and moved out of the way. */
@@ -603,21 +635,22 @@ body.lightbox-open { overflow: hidden; }
   .page-title { margin-top: 6px; }
 }
 
-/* "Advanced search": a fold that hides Search in, Filter by label and Sort by until you tap it.
-   The line you tap (the <summary>) is a white pill like the other buttons; the options are in a
-   framed box below it. list-style: none removes the little triangle of <details>. */
-.advanced-search { margin-top: 12px; }
+/* The "Filter" and "View" buttons under the search bar, and their panels. Each button is a white
+   pill (like the other buttons); tapping it opens its panel: a framed box with the options below.
+   The class "is-open" on a panel means open. "js" is a class set in the page head: only when
+   JavaScript works are closed panels hidden, so without it everything stays reachable. */
+.search-menus { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .advanced-toggle {
-  display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
   min-height: 36px; padding: 6px 14px; border-radius: 999px;
   border: 1px solid var(--color-divider); background: var(--color-neutral-100);
-  font-size: 14px; color: var(--color-text); user-select: none;
+  font: inherit; font-size: 14px; color: var(--color-text); user-select: none;
 }
-.advanced-toggle::-webkit-details-marker { display: none; }
 .advanced-toggle:hover { border-color: var(--color-accent-500); }
 .advanced-toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .advanced-chevron { transition: transform .15s; }
-.advanced-search[open] .advanced-chevron { transform: rotate(180deg); }
+.advanced-toggle[aria-expanded="true"] .advanced-chevron { transform: rotate(180deg); }
+.js .menu-panel:not(.is-open) { display: none; }
 .advanced-body {
   display: grid; gap: 14px; margin-top: 10px; padding: 14px;
   border: 1px solid var(--color-divider); border-radius: var(--radius-md);

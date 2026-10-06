@@ -32,6 +32,17 @@ function saveChoice() {
   document.cookie = `people_notes_now=${chosen.includes("notes") ? 1 : 0}; path=/; SameSite=Lax`;
 }
 
+// The "Layout:" buttons (Compact / Large). Choosing one changes the class of the card grid
+// ("layout-compact" or "layout-large"); the CSS does the rest. The choice is saved in a
+// cookie for a year, and the server writes the class into the page the same way next time.
+for (const radio of document.querySelectorAll('input[name="layout"]')) {
+  radio.addEventListener("change", () => {
+    grid.classList.remove("layout-compact", "layout-large");
+    grid.classList.add(`layout-${radio.value}`);
+    document.cookie = `people_layout=${radio.value}; path=/; max-age=31536000; SameSite=Lax`;
+  });
+}
+
 for (const box of switches) {
   box.addEventListener("change", () => {
     // classList.toggle(name, on): add the class when "on" is true, remove it when false
