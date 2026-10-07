@@ -103,9 +103,8 @@ if (dialog && openButton) {
         field.value = "";                        // date, notes, new labels
       }
     }
-    // Also remove the error message of a failed try, if there was one
-    const message = dialog.querySelector(".error");
-    if (message) {
+    // Also remove the error message of a failed try, if there was one, and "Missing: ..." (form-check.js)
+    for (const message of dialog.querySelectorAll(".error, .form-missing")) {
       message.remove();
     }
     const extras = dialog.querySelector(".more-notes");   // "Advanced notes" folds back too

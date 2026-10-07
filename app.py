@@ -200,7 +200,7 @@ PAGE_SIZE = 50
 # {code name: what the switch says}. Shown when nothing was chosen yet: only the name, with the
 # notes. (Labels and First met are off until you switch them on. Sorted by First met, the
 # dates are shown anyway: see forced_parts in people().)
-CARD_PARTS = {"name": "Name", "labels": "Labels", "notes": "Notes", "firstmet": "First met"}
+CARD_PARTS = {"name": "Name", "notes": "Notes", "firstmet": "First met", "labels": "Labels"}
 DEFAULT_CARD_PARTS = {"name", "notes"}
 
 # The two layouts of the People cards: {code name: what the button says}.

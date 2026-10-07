@@ -102,6 +102,21 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   width: 100%; padding-left: 44px; padding-right: calc(var(--submit-w) + 52px);
   -webkit-appearance: none; appearance: none;
 }
+/* The sign "search again": the Search button gets a pulsing ring (label-filter.js adds the class
+   needs-search when the labels were changed but the list was not searched again yet) */
+.search-submit.needs-search { animation: needs-search 1.6s ease-out infinite; }
+@keyframes needs-search {
+  0% { box-shadow: 0 0 0 0 rgba(176, 90, 42, .55); }
+  70%, 100% { box-shadow: 0 0 0 10px rgba(176, 90, 42, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-submit.needs-search { animation: none; box-shadow: 0 0 0 3px rgba(176, 90, 42, .45); }
+}
+.search-pending {
+  display: flex; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 13px; font-weight: 600;
+  color: var(--color-accent-800);
+}
+.search-pending[hidden] { display: none; }
 .search-submit {
   position: absolute; right: 4px; top: 4px; bottom: 4px; width: var(--submit-w);
   min-height: 0; padding: 0; justify-content: center; font-size: 14px;
@@ -261,7 +276,9 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .facts { display: grid; gap: 12px; width: 100%; text-align: left; margin-top: 8px; }
 /* No box: the notes sit straight on the card, under the small label */
 .fact { padding: 4px 0 8px; }
-.fact-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--color-neutral-700); }
+/* The small captions (NOTES, MEETINGS) on a contact's page and in the quick-view popup:
+   a little bigger, bold and dark brown, so they stand out */
+.fact-label { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-accent-800); }
 .fact-value { font-size: 16px; line-height: 1.6; margin: 2px 0 0; }
 /* The Delete button under a contact: small, in the middle */
 .delete-form { display: flex; justify-content: center; width: 100%; margin-top: 20px; }
@@ -344,7 +361,6 @@ html:not(.js) .meeting-dialog[data-edit-dialog]:not([data-open-on-load]) { displ
 .meeting-action:hover { color: var(--color-accent-800); }
 .timeline .meeting .error { margin-bottom: 14px; }
 .meeting-labels { display: flex; flex-wrap: wrap; gap: 4px; }   /* beside the date, in the meeting's top row */
-.meeting-labels .tag:hover { filter: brightness(0.96); }
 .meeting-notes { margin: 4px 0 0; line-height: 1.5; color: var(--color-neutral-800); white-space: pre-line; }
 .timeline-empty { margin: 0; color: var(--color-neutral-700); }
 
@@ -367,6 +383,13 @@ html:not(.js) .meeting-dialog[data-edit-dialog]:not([data-open-on-load]) { displ
   border-radius: var(--radius-lg); background: var(--color-accent-100); color: var(--color-accent-900);
 }
 .form-card { gap: 20px; }
+/* "Missing: Name, Date First Met": written below the Save button when a required field is empty
+   (static/js/form-check.js) */
+.form-missing { margin: 10px 0 0; font-size: 14px; font-weight: 600; text-align: center; color: #b3261e; }   /* red, in the middle */
+.form-missing::before {   /* a red circle with a ! in front of the text */
+  content: "!"; display: inline-block; width: 18px; height: 18px; margin-right: 8px; vertical-align: 1px;
+  border-radius: 50%; background: #b3261e; color: #fff; font-size: 12px; line-height: 18px; text-align: center;
+}
 .field { display: grid; gap: 6px; }
 .field > label { font-size: 14px; font-weight: 600; color: var(--color-text); margin: 0; }
 .field .hint { font-size: 12.5px; color: var(--color-neutral-700); }
@@ -410,7 +433,6 @@ input[type="file"]::file-selector-button {
 .person-labels.squeeze .tag:first-child { flex-shrink: 1; min-width: 0; }
 .detail-labels { justify-content: center; }
 .detail-labels .tag { font-size: 13px; padding: 4px 12px; }
-.detail-labels .tag:hover { filter: brightness(0.96); }
 
 /* The picker on the add/edit forms. A <fieldset> groups the checkboxes;
    we remove its default border and padding. */
@@ -671,6 +693,9 @@ body.lightbox-open { overflow: hidden; }
 .advanced-toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .advanced-chevron { transition: transform .15s; }
 .advanced-toggle[aria-expanded="true"] .advanced-chevron { transform: rotate(180deg); }
+/* The button whose panel is open is filled with the dark brown (the same as every chosen option), and its arrow points up */
+.advanced-toggle[aria-expanded="true"] { background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-neutral-100); }
+.advanced-toggle[aria-expanded="true"]:hover { border-color: var(--color-accent-700); }
 .js .menu-panel:not(.is-open) { display: none; }
 .advanced-body {
   display: grid; gap: 14px; margin-top: 10px; padding: 14px;
@@ -761,19 +786,28 @@ body.quickview-open { overflow: hidden; }
 .qv-title h2 { margin: 0 0 2px; font-size: 24px; line-height: 1.15; overflow-wrap: anywhere; }
 .qv-title .detail-sub { margin: 0; }
 .qv-labels, .qv-meeting-labels { display: flex; flex-wrap: wrap; gap: 4px; }
-.qv-labels { margin-top: 14px; }
+/* "(first met 2012)" beside the MEETINGS caption: normal letters, lighter, not capitals */
+.qv-first-met { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--color-neutral-700); }
+.qv-labels { margin-top: 8px; }   /* in the title block, under the name and "First met" */
 .qv-section { margin-top: 16px; }
 .qv-notes { margin: 4px 0 0; line-height: 1.5; color: var(--color-neutral-800); white-space: pre-line; }
-.qv-meetings { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+/* Long lists scroll inside the window: about four meetings are visible, the rest are a scroll away.
+   overscroll-behavior: contain = at the end of the list the scrolling doesn't carry on to the page behind. */
+.qv-meetings {
+  list-style: none; margin: 6px 0 0; padding: 0 4px 0 0; display: grid; gap: 8px;
+  max-height: min(250px, 32vh); overflow-y: auto; overscroll-behavior: contain;
+}
 .qv-meetings li {
   display: grid; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--color-bg);
 }
+.qv-meeting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .qv-meeting-date { font-weight: 600; font-size: 14px; }
 .qv-meeting-photos { font-size: 12px; color: var(--color-neutral-700); }
 .qv-meeting-notes { font-size: 13.5px; line-height: 1.4; color: var(--color-neutral-800); white-space: pre-line;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.qv-more { margin: 8px 2px 0; font-size: 13px; color: var(--color-neutral-700); }
 .qv-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+/* "Open full view" and "Edit": the same size (each takes half of the row) */
+.qv-actions .btn { flex: 1 1 0; justify-content: center; text-align: center; }
 @media (max-width: 600px) {
   .quickview { padding: 10px; align-items: flex-end; }                  /* a phone: the panel sits at the bottom */
   .quickview-panel { padding: 18px; max-height: 90vh; border-radius: 22px; }

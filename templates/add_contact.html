@@ -17,7 +17,7 @@
 
     <form class="card form-card" method="POST" enctype="multipart/form-data">
         {# The photo first, as in the design: a round picture with a +, and an "Upload a photo" button
-           (templates/_photo_picker.html, static/js/photo-picker.js). Optional. #}
+           (templates/_photo_picker.html, static/js/photo-picker.js). #}
         {% include "_photo_picker.html" %}
 
         <div class="field">
@@ -26,15 +26,6 @@
                    value="{{ request.form.get('name', '') }}" required>
         </div>
 
-        {# Notes come right after the picture: they are the main thing you write about a person.
-           The short fields (labels, date) follow. #}
-        <div class="field">
-            <label for="notes">Notes</label>
-            <textarea class="input" id="notes" name="notes" placeholder="e.g. Met at EgyetemistaIfi. Brother of Daniel. Lives in Cluj-Napoca. Likes driving.">{{ request.form.get('notes', '') }}</textarea>
-        </div>
-
-        {% include "_label_picker.html" %}
-
         <div class="field">
             <label for="date_met">Date First Met *</label>
             {# data-date-picker: static/js/date-picker.js adds a calendar button next to this box #}
@@ -42,6 +33,14 @@
                    value="{{ request.form.get('date_met', '') }}" required data-date-picker>
             <span class="hint">{{ date_hint }}</span>
         </div>
+
+        {# The two required fields come first (name, date); then the notes and the labels. #}
+        <div class="field">
+            <label for="notes">Notes</label>
+            <textarea class="input" id="notes" name="notes" placeholder="e.g. Met at EgyetemistaIfi. Brother of Daniel. Lives in Cluj-Napoca. Likes driving.">{{ request.form.get('notes', '') }}</textarea>
+        </div>
+
+        {% include "_label_picker.html" %}
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save Contact</button>

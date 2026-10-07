@@ -18,19 +18,14 @@
     </div>
     <div class="qv-title">
         <h2 id="qv-name">{{ contact.name }}</h2>
-        {# Meetings come newest first, so the last one in the list is the first time you met.
-           (No count of meetings here, only when you first met.) #}
-        {% if meetings %}
-        <p class="detail-sub">First met {{ meetings[-1].date|nice_date }}</p>
+        {# The labels sit under the name, beside the picture, where there is room #}
+        {% if contact.labels %}
+        <div class="qv-labels">
+            {% for label in contact.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}
+        </div>
         {% endif %}
     </div>
 </div>
-
-{% if contact.labels %}
-<div class="qv-labels">
-    {% for label in contact.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}
-</div>
-{% endif %}
 
 {% if contact.notes %}
 <div class="qv-section">
@@ -41,24 +36,24 @@
 
 {% if meetings %}
 <div class="qv-section">
-    <div class="fact-label">Meetings</div>
-    {# Only the newest few: the rest are on the full page #}
-    {% set shown = meetings[:4] %}
+    {# Meetings come newest first, so the last one in the list is the first time you met #}
+    <div class="fact-label">Meetings <span class="qv-first-met">(first met {{ meetings[-1].date|nice_date }})</span></div>
+    {# All the meetings, newest first. The list scrolls inside the window when it is long (see .qv-meetings in style.css) #}
     <ul class="qv-meetings">
-        {% for meeting in shown %}
+        {% for meeting in meetings %}
         <li>
-            <span class="qv-meeting-date">{{ meeting.date|nice_date }}</span>
-            {% if meeting.photos %}<span class="qv-meeting-photos">{{ meeting.photos|length }} photo{{ 's' if meeting.photos|length != 1 }}</span>{% endif %}
+            {# The top row: the date, and the labels right beside it (they wrap to the next line if there is no room) #}
+            <span class="qv-meeting-head">
+                <span class="qv-meeting-date">{{ meeting.date|nice_date }}</span>
+                {% if meeting.labels %}
+                <span class="qv-meeting-labels">{% for label in meeting.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}</span>
+                {% endif %}
+                {% if meeting.photos %}<span class="qv-meeting-photos">{{ meeting.photos|length }} photo{{ 's' if meeting.photos|length != 1 }}</span>{% endif %}
+            </span>
             {% if meeting.notes %}<span class="qv-meeting-notes">{{ meeting.notes }}</span>{% endif %}
-            {% if meeting.labels %}
-            <span class="qv-meeting-labels">{% for label in meeting.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}</span>
-            {% endif %}
         </li>
         {% endfor %}
     </ul>
-    {% if meetings|length > shown|length %}
-    <p class="qv-more">More meetings on the full page</p>
-    {% endif %}
 </div>
 {% endif %}
 

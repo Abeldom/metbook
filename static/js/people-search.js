@@ -78,17 +78,15 @@ function update() {
   }
 
   // Update the rest of the page.
-  // The count line. While searching: "3 people found". With the box empty: "1114 contacts"
-  // (with a label filter on, only the people with those labels are on the page, so the
-  // count is theirs). It is hidden only when a search finds nobody
+  // The count line. Narrowed (by the text or by labels): "3 contacts found". Nothing narrowed:
+  // "1114 contacts" (with a label filter on, only the people with those labels are on the page,
+  // so the count is theirs). It is hidden only when a search finds nobody
   // (then the "No one matches" box says it).
   result.hidden = Boolean(query) && matching === 0;
   resultCount.textContent = matching;
-  if (query) {
-    resultText.textContent = matching === 1 ? "person found" : "people found";
-  } else {
-    resultText.textContent = matching === 1 ? "contact" : "contacts";
-  }
+  // "found" whenever the list is narrowed: by the search text, or by labels (applied by the server)
+  const narrowed = Boolean(query) || result.dataset.labelsOn === "yes";
+  resultText.textContent = (matching === 1 ? "contact" : "contacts") + (narrowed ? " found" : "");
   noResults.hidden = !(query && matching === 0);
   noResultsQuery.textContent = query;
   clearButton.hidden = !query;

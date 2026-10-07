@@ -23,11 +23,11 @@
 
         <h1>{{ contact.name }}</h1>
 
-        {# Each label links to the People page, filtered to that label #}
+        {# The labels are only shown here (they are not links) #}
         {% if contact.labels %}
         <div class="detail-labels">
             {% for label in contact.labels %}
-            <a class="tag {{ label.id|label_color }}" href="{{ url_for('people', label=label.id) }}">{{ label.name }}</a>
+            <span class="tag {{ label.id|label_color }}">{{ label.name }}</span>
             {% endfor %}
         </div>
         {% endif %}
@@ -72,7 +72,7 @@
             <form class="meeting-form" method="POST" enctype="multipart/form-data"
                   action="{{ url_for('add_meeting_page', contact_id=contact.id) }}">
                 <div class="field">
-                    <label for="meeting-date">Date</label>
+                    <label for="meeting-date">Date *</label>
                     {# Only refill this form after a failed "add" (error), not after a failed edit #}
                     {# data-date-picker: date-picker.js adds a calendar button next to the box #}
                     <input class="input" type="text" id="meeting-date" name="date" placeholder="{{ date_example }}"
@@ -80,7 +80,7 @@
                     <span class="hint">{{ date_hint }}</span>
                 </div>
                 <div class="field">
-                    <label for="meeting-notes">Notes (optional)</label>
+                    <label for="meeting-notes">Notes</label>
                     <textarea class="input" id="meeting-notes" name="notes" placeholder="Where you met, what you talked about">{{ request.form.get('notes', '') if error }}</textarea>
                 </div>
                 {# Labels and photos are the "extras": folded away under "Advanced notes" so the form stays short.
@@ -96,7 +96,7 @@
                             {% include "_label_picker.html" %}
                         {% endwith %}
                         <div class="field">
-                            <label for="meeting-photos">Photos (optional)</label>
+                            <label for="meeting-photos">Photos</label>
                             {# multiple: lets you choose several files at once #}
                             <input class="input" type="file" id="meeting-photos" name="photos" accept="image/*" multiple>
                             <span class="hint">You can choose several at once • PNG, JPG, GIF, or WebP</span>
@@ -134,13 +134,13 @@
             <form class="meeting-form" method="POST" enctype="multipart/form-data"
                   action="{{ url_for('edit_meeting_page', contact_id=contact.id, meeting_id=meeting.id) }}">
                 <div class="field">
-                    <label for="edit-date-{{ meeting.id }}">Date</label>
+                    <label for="edit-date-{{ meeting.id }}">Date *</label>
                     <input class="input" type="text" id="edit-date-{{ meeting.id }}" name="date"
                            value="{{ request.form.get('date', meeting.date) if is_editing else meeting.date }}" required data-date-picker>
                     <span class="hint">{{ date_hint }}</span>
                 </div>
                 <div class="field">
-                    <label for="edit-notes-{{ meeting.id }}">Notes (optional)</label>
+                    <label for="edit-notes-{{ meeting.id }}">Notes</label>
                     <textarea class="input" id="edit-notes-{{ meeting.id }}" name="notes">{{ request.form.get('notes', meeting.notes or '') if is_editing else meeting.notes or '' }}</textarea>
                 </div>
                 {# Labels and photos are folded under "Advanced notes", the same as in the "Add a meeting" window.
@@ -190,11 +190,11 @@
             <li class="meeting {% if loop.last %}first{% endif %}" id="meeting-{{ meeting.id }}">
                 <div class="meeting-head">
                     <time class="meeting-date" datetime="{{ meeting.date }}">{{ meeting.date|nice_date }}</time>
-                    {# The meeting's labels; each opens the People page filtered to that label #}
+                    {# The meeting's labels (only shown, not links) #}
                     {% if meeting.labels %}
                     <div class="meeting-labels">
                         {% for label in meeting.labels %}
-                        <a class="tag {{ label.id|label_color }}" href="{{ url_for('people', label=label.id) }}">{{ label.name }}</a>
+                        <span class="tag {{ label.id|label_color }}">{{ label.name }}</span>
                         {% endfor %}
                     </div>
                     {% endif %}

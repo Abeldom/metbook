@@ -60,5 +60,8 @@
 
     {# Links back to the People list (menu, "Back to Contacts", "Cancel") return to the list as you left it #}
     <script type="module" src="{{ url_for('static', filename='js/return-to-people.js') }}"></script>
+
+    {# Pressing Save with a required field empty: says what is missing, below the buttons #}
+    <script type="module" src="{{ url_for('static', filename='js/form-check.js') }}"></script>
 </body>
 </html>
