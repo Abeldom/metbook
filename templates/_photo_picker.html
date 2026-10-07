@@ -1,0 +1,37 @@
+{# _photo_picker.html - the "Photo" part of the add and edit contact forms: a round picture (a +
+   when there is none), a short text and the buttons "Upload a photo" / "Upload new photo" / "Remove photo".
+   Both forms pull it in with {% include "_photo_picker.html" %}, so it's written only once.
+
+   It needs current_name (the contact's name, for the picture's alt text), and, when the contact
+   already has a picture: current_thumb (the small copy for the round picture) and current_full
+   (the original, shown full size when you click the round picture). On the add page these three
+   are empty.
+
+   The real form fields are the two inputs below: the file input "picture" and, when there is a
+   picture to remove, the checkbox "remove_picture". The buttons and the round picture are only
+   handles for them: static/js/photo-picker.js (also handles pasting with Ctrl+V). Without
+   JavaScript the file input just stays visible and works by itself. #}
+<div class="photo-picker field" data-photo-picker
+     data-current-src="{{ current_thumb or '' }}" data-current-full="{{ current_full or '' }}"
+     data-current-alt="{{ current_name or '' }}">
+    {# The round picture: with a picture, a click shows it full size; with a +, a click opens the file window #}
+    <button type="button" class="photo-picker-circle" data-photo-circle aria-label="Choose a photo" hidden>
+        <img alt="" hidden>
+        <span class="photo-picker-plus" aria-hidden="true">+</span>
+    </button>
+    {# A link nobody sees: the script "clicks" it to show the picture full size on a dark background
+       (static/js/lightbox.js handles every link with data-lightbox) #}
+    <a href="#" data-lightbox data-photo-view hidden aria-hidden="true" tabindex="-1"></a>
+    <div class="photo-picker-body">
+        <span class="photo-picker-title">Photo</span>
+        {# The only hint: pasting a copied picture. (It is always the same, in every situation.) #}
+        <span class="hint">Copy a picture and press Ctrl+V, or:</span>
+        {# The buttons one under the other, the same size and look (btn btn-secondary) #}
+        <div class="photo-picker-actions" hidden>
+            <button type="button" class="btn btn-secondary" data-photo-choose>Upload a photo</button>
+            <button type="button" class="btn btn-secondary" data-photo-remove hidden>Remove photo</button>
+        </div>
+        <input class="input" type="file" id="picture" name="picture" accept="image/*">
+        {% if current_thumb %}<input type="checkbox" name="remove_picture" value="1" hidden>{% endif %}
+    </div>
+</div>

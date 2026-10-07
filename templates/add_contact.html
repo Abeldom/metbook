@@ -16,35 +16,31 @@
     {% endif %}
 
     <form class="card form-card" method="POST" enctype="multipart/form-data">
-        <div class="field">
-            <label for="name">Name *</label>
-            <input class="input" type="text" id="name" name="name" placeholder="e.g., Alice Johnson"
-                   value="{{ request.form.get('name', '') }}" required>
-        </div>
+        {# The photo first, as in the design: a round picture with a +, and an "Upload a photo" button
+           (templates/_photo_picker.html, static/js/photo-picker.js). Optional. #}
+        {% include "_photo_picker.html" %}
 
         <div class="field">
-            <label for="picture">Picture (optional)</label>
-            <input class="input" type="file" id="picture" name="picture" accept="image/*">
-            {# Filled in by static/js/paste-picture.js when you choose or paste a picture #}
-            <div class="picture-preview" hidden><img alt="Preview of the new picture"><span></span></div>
-            <span class="hint">PNG, JPG, GIF, or WebP • or copy a picture and press Ctrl+V</span>
+            <label for="name">Name *</label>
+            <input class="input" type="text" id="name" name="name" placeholder="e.g. Tóth Lénárd"
+                   value="{{ request.form.get('name', '') }}" required>
         </div>
 
         {# Notes come right after the picture: they are the main thing you write about a person.
            The short fields (labels, date) follow. #}
         <div class="field">
             <label for="notes">Notes</label>
-            <textarea class="input" id="notes" name="notes" placeholder="e.g., Met at the coffee shop. Likes hiking.">{{ request.form.get('notes', '') }}</textarea>
+            <textarea class="input" id="notes" name="notes" placeholder="e.g. Met at EgyetemistaIfi. Brother of Daniel. Lives in Cluj-Napoca. Likes driving.">{{ request.form.get('notes', '') }}</textarea>
         </div>
 
         {% include "_label_picker.html" %}
 
         <div class="field">
-            <label for="date_met">Date First Met (optional)</label>
+            <label for="date_met">Date First Met *</label>
             {# data-date-picker: static/js/date-picker.js adds a calendar button next to this box #}
-            <input class="input" type="text" id="date_met" name="date_met" placeholder="e.g., 2026, 2026-09, 2026-09-22"
-                   value="{{ request.form.get('date_met', '') }}" data-date-picker>
-            <span class="hint">Type just the year, the year and month, or the full date, or tap the calendar to choose a day. It becomes the first meeting on their timeline.</span>
+            <input class="input" type="text" id="date_met" name="date_met" placeholder="{{ date_example }}"
+                   value="{{ request.form.get('date_met', '') }}" required data-date-picker>
+            <span class="hint">{{ date_hint }}</span>
         </div>
 
         <div class="form-actions">
@@ -53,6 +49,6 @@
         </div>
     </form>
 </div>
-<script type="module" src="{{ url_for('static', filename='js/paste-picture.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/photo-picker.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/date-picker.js') }}"></script>
 {% endblock %}

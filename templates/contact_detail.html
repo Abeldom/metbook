@@ -32,22 +32,12 @@
         </div>
         {% endif %}
 
-        {# Meetings come newest first, so the last one in the list is the first time you met #}
-        {% if meetings %}
-        <p class="detail-sub">
-            {{ meetings|length }} meeting{{ 's' if meetings|length != 1 }}
-            · first met {{ meetings[-1].date|nice_date }}
-        </p>
-        {% endif %}
-
         {% if contact.notes %}
         <div class="facts">
+            {# No box and no icon: the text sits straight on the card, under a small NOTES label #}
             <div class="fact">
-                <span class="fact-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span>
-                <div>
-                    <div class="fact-label">Notes</div>
-                    <p class="fact-value">{{ contact.notes }}</p>
-                </div>
+                <div class="fact-label">Notes</div>
+                <p class="fact-value">{{ contact.notes }}</p>
             </div>
         </div>
         {% endif %}
@@ -56,12 +46,20 @@
     </div>
 
     <section class="card timeline-card" aria-labelledby="timeline-title">
-        <h2 id="timeline-title">Meetings</h2>
+        {# The title on the left, "Add a meeting" on the right, both centered on the same line #}
+        <div class="timeline-head">
+            <h2 id="timeline-title">Meetings</h2>
+            <button type="button" class="btn btn-primary add-meeting-open" data-open-meeting aria-controls="add-meeting-dialog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add a meeting</button>
+        </div>
 
-        {# <details> is a built-in HTML toggle: the form stays folded until you click "Add a meeting".
-           If the last try had an error, we open it so you can see what went wrong. #}
-        <details class="add-meeting" {% if error %}open{% endif %}>
-            <summary class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add a meeting</summary>
+        {# "Add a meeting" opens a popup window (a <dialog>, static/js/add-meeting.js). After a failed try the
+           page opens it again by itself (data-open-on-load), so you can see what went wrong. Without JavaScript
+           the form is simply shown on the page. #}
+        <dialog class="meeting-dialog" id="add-meeting-dialog" aria-labelledby="add-meeting-title"{% if error %} data-open-on-load{% endif %}>
+            <div class="meeting-dialog-head">
+                <h2 id="add-meeting-title">Add a meeting</h2>
+                <button type="button" class="meeting-dialog-close" data-close-meeting aria-label="Close">&times;</button>
+            </div>
 
             {% if error %}
             <div class="error" role="alert">
@@ -77,93 +75,133 @@
                     <label for="meeting-date">Date</label>
                     {# Only refill this form after a failed "add" (error), not after a failed edit #}
                     {# data-date-picker: date-picker.js adds a calendar button next to the box #}
-                    <input class="input" type="text" id="meeting-date" name="date" placeholder="2026-09-22"
+                    <input class="input" type="text" id="meeting-date" name="date" placeholder="{{ date_example }}"
                            value="{{ request.form.get('date', '') if error }}" required data-date-picker>
-                    <span class="hint">Type a year (2026), a month (2026-09) or a full date (2026-09-22), or tap the calendar to choose a day</span>
+                    <span class="hint">{{ date_hint }}</span>
                 </div>
                 <div class="field">
                     <label for="meeting-notes">Notes (optional)</label>
                     <textarea class="input" id="meeting-notes" name="notes" placeholder="Where you met, what you talked about">{{ request.form.get('notes', '') if error }}</textarea>
                 </div>
-                {# The same label picker as on the contact forms. After a failed "add" (error)
-                   we keep what was ticked and typed; otherwise it starts empty.
-                   |map('int') turns the ticked ids from text ("3") into numbers (3). #}
-                {% with ticked_label_ids = request.form.getlist('labels')|map('int')|list if error else [],
-                        new_labels_value = request.form.get('new_labels', '') if error else '' %}
-                    {% include "_label_picker.html" %}
-                {% endwith %}
-                <div class="field">
-                    <label for="meeting-photos">Photos (optional)</label>
-                    {# multiple: lets you choose several files at once #}
-                    <input class="input" type="file" id="meeting-photos" name="photos" accept="image/*" multiple>
-                    <span class="hint">You can choose several at once • PNG, JPG, GIF, or WebP</span>
+                {# Labels and photos are the "extras": folded away under "Advanced notes" so the form stays short.
+                   It opens by itself after a failed "add" that had labels ticked or typed. #}
+                <details class="more-notes"{% if error and (request.form.getlist('labels') or request.form.get('new_labels')) %} open{% endif %}>
+                    <summary>Advanced notes <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+                    <div class="more-notes-body">
+                        {# The same label picker as on the contact forms. After a failed "add" (error)
+                           we keep what was ticked and typed; otherwise it starts empty.
+                           |map('int') turns the ticked ids from text ("3") into numbers (3). #}
+                        {% with ticked_label_ids = request.form.getlist('labels')|map('int')|list if error else [],
+                                new_labels_value = request.form.get('new_labels', '') if error else '' %}
+                            {% include "_label_picker.html" %}
+                        {% endwith %}
+                        <div class="field">
+                            <label for="meeting-photos">Photos (optional)</label>
+                            {# multiple: lets you choose several files at once #}
+                            <input class="input" type="file" id="meeting-photos" name="photos" accept="image/*" multiple>
+                            <span class="hint">You can choose several at once • PNG, JPG, GIF, or WebP</span>
+                        </div>
+                    </div>
+                </details>
+                <div class="meeting-form-buttons">
+                    <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save meeting</button>
+                    {# Changed your mind? "Cancel" empties the form and closes it (static/js/add-meeting.js).
+                       type="button": it doesn't send the form. #}
+                    <button type="button" class="btn btn-secondary" data-cancel-meeting>Cancel</button>
                 </div>
-                <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save meeting</button>
             </form>
-        </details>
+        </dialog>
+
+        {# Editing a meeting: every meeting has its own popup window, built together with the page and kept closed,
+           so a click on its edit icon only has to show it (static/js/add-meeting.js): no reload, no waiting.
+           After a failed save the server shows the page again with that meeting's window open (data-open-on-load).
+           Without JavaScript the edit icon is a normal link (?edit_meeting=ID) that shows the window on the page. #}
+        {% for meeting in meetings %}
+        {% set is_editing = meeting.id == editing_meeting_id %}
+        <dialog class="meeting-dialog" id="edit-meeting-dialog-{{ meeting.id }}" aria-labelledby="edit-meeting-title-{{ meeting.id }}" data-edit-dialog{% if is_editing %} data-open-on-load{% endif %}>
+            <div class="meeting-dialog-head">
+                <h2 id="edit-meeting-title-{{ meeting.id }}">Edit meeting</h2>
+                <button type="button" class="meeting-dialog-close" data-close-meeting aria-label="Close">&times;</button>
+            </div>
+
+            {% if is_editing and edit_error %}
+            <div class="error" role="alert">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                <span>{{ edit_error }}</span>
+            </div>
+            {% endif %}
+
+            <form class="meeting-form" method="POST" enctype="multipart/form-data"
+                  action="{{ url_for('edit_meeting_page', contact_id=contact.id, meeting_id=meeting.id) }}">
+                <div class="field">
+                    <label for="edit-date-{{ meeting.id }}">Date</label>
+                    <input class="input" type="text" id="edit-date-{{ meeting.id }}" name="date"
+                           value="{{ request.form.get('date', meeting.date) if is_editing else meeting.date }}" required data-date-picker>
+                    <span class="hint">{{ date_hint }}</span>
+                </div>
+                <div class="field">
+                    <label for="edit-notes-{{ meeting.id }}">Notes (optional)</label>
+                    <textarea class="input" id="edit-notes-{{ meeting.id }}" name="notes">{{ request.form.get('notes', meeting.notes or '') if is_editing else meeting.notes or '' }}</textarea>
+                </div>
+                {# Labels and photos are folded under "Advanced notes", the same as in the "Add a meeting" window.
+                   It opens by itself when the meeting already has labels or photos. #}
+                <details class="more-notes"{% if meeting.labels or meeting.photos or (is_editing and edit_error) %} open{% endif %}>
+                    <summary>Advanced notes <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+                    <div class="more-notes-body">
+                        {# Label picker: the meeting's labels are ticked (or what was ticked, after a failed save) #}
+                        {% with ticked_label_ids = request.form.getlist('labels')|map('int')|list if (is_editing and edit_error) else meeting.labels|map(attribute='id')|list,
+                                new_labels_value = request.form.get('new_labels', '') if (is_editing and edit_error) else '' %}
+                            {% include "_label_picker.html" %}
+                        {% endwith %}
+                        <div class="field">
+                            <label for="edit-photos-{{ meeting.id }}">Photos</label>
+                            {% if meeting.photos %}
+                            {# Each photo has a "Remove" checkbox; ticked ones are deleted when you save #}
+                            <div class="photo-grid">
+                                {% for photo in meeting.photos %}
+                                <label class="photo-remove">
+                                    <img src="{{ url_for('get_thumb', filename=photo.filename) }}" alt="Photo {{ loop.index }}" loading="lazy">
+                                    <span class="check">
+                                        <input type="checkbox" name="remove_photos" value="{{ photo.id }}"
+                                               {% if is_editing and photo.id|string in request.form.getlist('remove_photos') %}checked{% endif %}>
+                                        Remove
+                                    </span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <input class="input" type="file" id="edit-photos-{{ meeting.id }}" name="photos" accept="image/*" multiple>
+                            <span class="hint">Add more photos • you can choose several at once</span>
+                        </div>
+                    </div>
+                </details>
+                <div class="meeting-form-buttons">
+                    <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save</button>
+                    <button type="button" class="btn btn-secondary" data-close-meeting data-reset-meeting>Cancel</button>
+                </div>
+            </form>
+        </dialog>
+        {% endfor %}
 
         {% if meetings %}
         <ol class="timeline">
             {% for meeting in meetings %}
             {# id="meeting-5" lets a link jump straight to this meeting (#meeting-5) #}
             <li class="meeting {% if loop.last %}first{% endif %}" id="meeting-{{ meeting.id }}">
-                {% if meeting.id == editing_meeting_id %}
-                {# This meeting is being edited: show a form instead of the text #}
-                {% if edit_error %}
-                <div class="error" role="alert">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-                    <span>{{ edit_error }}</span>
-                </div>
-                {% endif %}
-                <form class="meeting-form" method="POST" enctype="multipart/form-data"
-                      action="{{ url_for('edit_meeting_page', contact_id=contact.id, meeting_id=meeting.id) }}">
-                    <div class="field">
-                        <label for="edit-date">Date</label>
-                        <input class="input" type="text" id="edit-date" name="date"
-                               value="{{ request.form.get('date', meeting.date) }}" required autofocus data-date-picker>
-                        <span class="hint">Type a year (2026), a month (2026-09) or a full date (2026-09-22), or tap the calendar to choose a day</span>
-                    </div>
-                    <div class="field">
-                        <label for="edit-notes">Notes (optional)</label>
-                        <textarea class="input" id="edit-notes" name="notes">{{ request.form.get('notes', meeting.notes or '') }}</textarea>
-                    </div>
-                    {# Label picker: the meeting's labels are ticked (or what was ticked, after a failed save) #}
-                    {% with ticked_label_ids = request.form.getlist('labels')|map('int')|list if edit_error else meeting.labels|map(attribute='id')|list,
-                            new_labels_value = request.form.get('new_labels', '') if edit_error else '' %}
-                        {% include "_label_picker.html" %}
-                    {% endwith %}
-                    <div class="field">
-                        <label for="edit-photos">Photos</label>
-                        {% if meeting.photos %}
-                        {# Each photo has a "Remove" checkbox; ticked ones are deleted when you save #}
-                        <div class="photo-grid">
-                            {% for photo in meeting.photos %}
-                            <label class="photo-remove">
-                                <img src="{{ url_for('get_thumb', filename=photo.filename) }}" alt="Photo {{ loop.index }}" loading="lazy">
-                                <span class="check">
-                                    <input type="checkbox" name="remove_photos" value="{{ photo.id }}"
-                                           {% if photo.id|string in request.form.getlist('remove_photos') %}checked{% endif %}>
-                                    Remove
-                                </span>
-                            </label>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        <input class="input" type="file" id="edit-photos" name="photos" accept="image/*" multiple>
-                        <span class="hint">Add more photos • you can choose several at once</span>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save</button>
-                        <a class="btn btn-secondary" href="{{ url_for('view_contact', contact_id=contact.id, _anchor='meeting-' ~ meeting.id) }}">Cancel</a>
-                    </div>
-                </form>
-                {% else %}
                 <div class="meeting-head">
                     <time class="meeting-date" datetime="{{ meeting.date }}">{{ meeting.date|nice_date }}</time>
-                    {% if loop.last %}<span class="tag tag-accent-2">First meeting</span>{% endif %}
+                    {# The meeting's labels; each opens the People page filtered to that label #}
+                    {% if meeting.labels %}
+                    <div class="meeting-labels">
+                        {% for label in meeting.labels %}
+                        <a class="tag {{ label.id|label_color }}" href="{{ url_for('people', label=label.id) }}">{{ label.name }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     <div class="meeting-actions">
-                        {# A normal link that adds ?edit_meeting=ID to the URL: the page reloads with this meeting as a form #}
-                        <a class="btn btn-ghost meeting-action"
+                        {# With JavaScript a click shows this meeting's popup window at once (data-edit-meeting). Without it, this is a
+                           normal link that adds ?edit_meeting=ID to the URL: the page reloads with the window open. #}
+                        <a class="btn btn-ghost meeting-action" data-edit-meeting="{{ meeting.id }}"
                            href="{{ url_for('view_contact', contact_id=contact.id, edit_meeting=meeting.id, _anchor='meeting-' ~ meeting.id) }}"
                            aria-label="Edit the meeting on {{ meeting.date|nice_date }}">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
@@ -177,14 +215,6 @@
                         </form>
                     </div>
                 </div>
-                {# The meeting's labels; each opens the People page filtered to that label #}
-                {% if meeting.labels %}
-                <div class="meeting-labels">
-                    {% for label in meeting.labels %}
-                    <a class="tag {{ label.id|label_color }}" href="{{ url_for('people', label=label.id) }}">{{ label.name }}</a>
-                    {% endfor %}
-                </div>
-                {% endif %}
                 {% if meeting.notes %}<p class="meeting-notes">{{ meeting.notes }}</p>{% endif %}
                 {% if meeting.photos %}
                 {# Small square previews; tapping one opens the full photo #}
@@ -199,7 +229,6 @@
                     {% endfor %}
                 </div>
                 {% endif %}
-                {% endif %}
             </li>
             {% endfor %}
         </ol>
@@ -208,11 +237,14 @@
         {% endif %}
     </section>
 
-    {# tojson turns the name into a safe JavaScript string, so names like O'Brien don't break the confirm box #}
+    {# The name goes into a data attribute (Jinja escapes quotes for us, so names like O'Brien are safe) and the
+       confirm box reads it back with this.dataset. This keeps {{ }} out of the JavaScript. #}
     <form class="delete-form" method="POST" action="{{ url_for('delete_contact_page', contact_id=contact.id) }}"
-          onsubmit='return confirm("Delete " + {{ contact.name|tojson }} + " and all their meetings permanently?");'>
+          data-name="{{ contact.name }}"
+          onsubmit='return confirm("Delete " + this.dataset.name + " and all their meetings permanently?");'>
         <button type="submit" class="btn btn-danger"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Delete Contact</button>
     </form>
 </div>
 <script type="module" src="{{ url_for('static', filename='js/date-picker.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/add-meeting.js') }}"></script>
 {% endblock %}

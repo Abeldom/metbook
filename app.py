@@ -225,6 +225,21 @@ def label_color(label_id):
     return LABEL_COLORS[label_id % len(LABEL_COLORS)]
 
 
+@app.context_processor
+def date_texts():
+    """
+    Makes two texts available in every template, always with today's real date:
+      {{ date_example }}  the placeholder of the date boxes, ONE example: "e.g. 2026-10-07"
+      {{ date_hint }}     the small text under them, saying a year or a month alone is fine too
+    """
+    today = datetime.now()
+    return {
+        "date_example": f"e.g. {today:%Y-%m-%d}",
+        "date_hint": (f"Type a date or tap the calendar to choose a date. "
+                      f"Just a year ({today:%Y}) or a year and month ({today:%Y-%m}) is fine too."),
+    }
+
+
 def parse_label_names(text):
     """
     Split the "new labels" text at the commas:
@@ -506,8 +521,11 @@ def add_contact_page():
             return render_template("add_contact.html", error="Name is required!",
                                    **label_form_data())
 
-        # Validate: the date is optional, but if given it must look right
-        if date_met and not parse_date(date_met):
+        # Validate: the date first met is required (it becomes their first meeting) and must look right
+        if not date_met:
+            return render_template("add_contact.html", error="Date first met is required!",
+                                   **label_form_data())
+        if not parse_date(date_met):
             return render_template("add_contact.html", error=DATE_ERROR,
                                    **label_form_data())
 
@@ -527,8 +545,7 @@ def add_contact_page():
         contact_id = add_contact(name, notes, picture_filename)
 
         # The "date first met" becomes the first meeting on their timeline
-        if date_met:
-            add_meeting(contact_id, date_met)
+        add_meeting(contact_id, date_met)
 
         # The ticked labels, plus any new ones typed in
         set_contact_labels(contact_id, ticked_label_ids(),
@@ -645,6 +662,20 @@ def show_contact_page(contact, **extra):
     return render_template("contact_detail.html", contact=contact,
                            meetings=get_meetings(contact["id"]),
                            all_labels=get_all_labels(), **extra)
+
+
+@app.route("/contact/<int:contact_id>/preview")
+def contact_preview(contact_id):
+    """
+    The content of the quick-view window on the People page: one person's details as a
+    piece of HTML (no header, no footer). static/js/quick-view.js fetches it when you click
+    a card. The "Open full view" button inside it goes to view_contact() below.
+    """
+    contact = get_contact_by_id(contact_id)
+    if not contact:
+        return "", 404
+    return render_template("_contact_preview.html", contact=contact,
+                           meetings=get_meetings(contact_id))
 
 
 @app.route("/contact/<int:contact_id>")

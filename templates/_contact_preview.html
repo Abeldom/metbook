@@ -1,0 +1,69 @@
+{# _contact_preview.html - the content of the quick-view window on the People page.
+   It is NOT a whole page (no header, no footer): static/js/quick-view.js asks the route
+   /contact/<id>/preview for it when you click a person's card, and puts it into the window.
+   It needs contact and meetings, the same as the full page (contact_detail.html).
+   Everything here is only for reading: the buttons at the bottom open the full page or the
+   edit page. #}
+<div class="qv-head">
+    <div class="qv-photo">
+        {% if contact.picture_path %}
+        {# Click: the whole original opens on a dark background (static/js/lightbox.js) #}
+        <a class="zoom" href="{{ url_for('get_upload', filename=contact.picture_path) }}" data-lightbox
+           aria-label="View the whole picture of {{ contact.name }}">
+            <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}">
+        </a>
+        {% else %}
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+        {% endif %}
+    </div>
+    <div class="qv-title">
+        <h2 id="qv-name">{{ contact.name }}</h2>
+        {# Meetings come newest first, so the last one in the list is the first time you met.
+           (No count of meetings here, only when you first met.) #}
+        {% if meetings %}
+        <p class="detail-sub">First met {{ meetings[-1].date|nice_date }}</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if contact.labels %}
+<div class="qv-labels">
+    {% for label in contact.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}
+</div>
+{% endif %}
+
+{% if contact.notes %}
+<div class="qv-section">
+    <div class="fact-label">Notes</div>
+    <p class="qv-notes">{{ contact.notes }}</p>
+</div>
+{% endif %}
+
+{% if meetings %}
+<div class="qv-section">
+    <div class="fact-label">Meetings</div>
+    {# Only the newest few: the rest are on the full page #}
+    {% set shown = meetings[:4] %}
+    <ul class="qv-meetings">
+        {% for meeting in shown %}
+        <li>
+            <span class="qv-meeting-date">{{ meeting.date|nice_date }}</span>
+            {% if meeting.photos %}<span class="qv-meeting-photos">{{ meeting.photos|length }} photo{{ 's' if meeting.photos|length != 1 }}</span>{% endif %}
+            {% if meeting.notes %}<span class="qv-meeting-notes">{{ meeting.notes }}</span>{% endif %}
+            {% if meeting.labels %}
+            <span class="qv-meeting-labels">{% for label in meeting.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% if meetings|length > shown|length %}
+    <p class="qv-more">More meetings on the full page</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="qv-actions">
+    {# A normal link: this is the "full view" #}
+    <a class="btn btn-primary" href="{{ url_for('view_contact', contact_id=contact.id) }}">Open full view</a>
+    <a class="btn btn-secondary" href="{{ url_for('edit_contact_page', contact_id=contact.id) }}">Edit</a>
+</div>

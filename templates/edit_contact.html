@@ -18,33 +18,19 @@
     {# request.form.get('name', contact.name): after a failed save, show what was typed;
        otherwise show what's saved in the database #}
     <form class="card form-card" method="POST" enctype="multipart/form-data">
+        {# The photo first: a round picture (the current photo, or a +), with the buttons "Upload new photo",
+           "Remove photo" (templates/_photo_picker.html, static/js/photo-picker.js).
+           The small copy fills the round picture; a click on it shows the whole original. #}
+        {% with current_name = contact.name,
+                current_thumb = url_for('get_thumb', filename=contact.picture_path) if contact.picture_path else '',
+                current_full = url_for('get_upload', filename=contact.picture_path) if contact.picture_path else '' %}
+            {% include "_photo_picker.html" %}
+        {% endwith %}
+
         <div class="field">
             <label for="name">Name *</label>
             <input class="input" type="text" id="name" name="name"
                    value="{{ request.form.get('name', contact.name) }}" required>
-        </div>
-
-        <div class="field">
-            <label for="picture">Picture</label>
-            {% if contact.picture_path %}
-            <div class="current-picture">
-                {# Click it to see the whole original picture (static/js/lightbox.js) #}
-                <a class="zoom" href="{{ url_for('get_upload', filename=contact.picture_path) }}" data-lightbox
-                   aria-label="View the whole picture">
-                    <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="Current picture of {{ contact.name }}">
-                </a>
-                <label class="check">
-                    <input type="checkbox" name="remove_picture" value="1">
-                    Remove this picture
-                </label>
-            </div>
-            {% endif %}
-            <input class="input" type="file" id="picture" name="picture" accept="image/*">
-            {# Filled in by static/js/paste-picture.js when you choose or paste a picture #}
-            <div class="picture-preview" hidden><img alt="Preview of the new picture"><span></span></div>
-            <span class="hint">
-                {% if contact.picture_path %}Choose a new picture to replace the current one. {% endif %}PNG, JPG, GIF, or WebP • or copy a picture and press Ctrl+V
-            </span>
         </div>
 
         {# Notes right after the picture, then the labels (same order as "Add a New Contact") #}
@@ -61,5 +47,5 @@
         </div>
     </form>
 </div>
-<script type="module" src="{{ url_for('static', filename='js/paste-picture.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/photo-picker.js') }}"></script>
 {% endblock %}

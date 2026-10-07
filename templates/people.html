@@ -276,6 +276,8 @@
         <script type="module" src="{{ url_for('static', filename='js/card-labels.js') }}"></script>
         <script type="module" src="{{ url_for('static', filename='js/people-view.js') }}"></script>
         <script type="module" src="{{ url_for('static', filename='js/keep-scroll.js') }}"></script>
+        {# Click a card: a quick-view window with the person's details (static/js/quick-view.js) #}
+        <script type="module" src="{{ url_for('static', filename='js/quick-view.js') }}"></script>
     {% elif label_ids %}
         {# Only possible with "All of these": nobody has every one of the chosen labels #}
         <div class="card empty">
