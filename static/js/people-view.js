@@ -2,13 +2,10 @@
 //
 // Each switch adds or removes a CSS class on the card grid (like "hide-notes"),
 // and the CSS then hides that part on every card. The choice is also saved
-// in a cookie, so the server draws the page the same way next time.
+// in a cookie (kept for a year), so the server draws the page the same way next time.
 
 const grid = document.querySelector(".people-grid");
 const switches = document.querySelectorAll(".view-option input");
-// The server writes a number into the page that changes every time the server starts (data-boot).
-// It goes into the cookies below, so a choice made before a restart of the server is not used any more.
-const boot = grid.dataset.boot;
 
 // Is this switch on in YOUR saved choice? A locked (disabled) switch, like
 // First met while sorting by first met, is ticked for now, but your own choice
@@ -18,23 +15,16 @@ function isChosen(box) {
 }
 
 function saveChoice() {
-  // The code names of the switches that are on, e.g. "labels.firstmet" (Notes is kept apart)
+  // The code names of the switches that are on, e.g. "name.notes.labels"
   const chosen = [...switches].filter(isChosen).map((box) => box.value);
-  const others = chosen.filter((name) => name !== "notes");
 
   // A cookie is a small piece of text the browser keeps for this site and
   // sends back to the server with every request.
   //   path=/                 -> for every page of the site
+  //   max-age=31536000       -> kept for a year (the same as the Layout choice), so "Show" looks the
+  //                             same every time you open the app
   //   SameSite=Lax           -> don't send it along when other sites link here in the background
-  // No max-age: this is a "session cookie", forgotten when the browser is closed. So every time you
-  // open the app again, "Show" starts from the default (Name and Notes), and what you switch
-  // on or off stays only for this visit. It also starts again after the server was restarted:
-  // the value is written as "<boot number>~<choice>" and the server ignores an old boot number.
-  // (The number at the end goes up whenever the defaults change, so older cookies are ignored.)
-  document.cookie = `people_view_4=${boot}~${others.join(".")}; path=/; SameSite=Lax`;
-
-  // Notes have their own cookie ("1" = on, "0" = off), also forgotten when the browser is closed.
-  document.cookie = `people_notes_now=${boot}~${chosen.includes("notes") ? 1 : 0}; path=/; SameSite=Lax`;
+  document.cookie = `people_show_2=${chosen.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
 // The "Layout:" buttons (Compact / Large). Choosing one changes the class of the card grid
@@ -48,10 +38,35 @@ for (const radio of document.querySelectorAll('input[name="layout"]')) {
   });
 }
 
+// At least one thing must always be shown: the last ticked switch can't be switched off.
+// It gets a little hint (title) so you can see why it doesn't react.
+function markLastOne() {
+  const on = [...switches].filter((box) => box.checked);
+  for (const box of switches) {
+    const isLast = on.length === 1 && box === on[0] && !box.disabled;
+    box.parentElement.classList.toggle("view-option-last", isLast);
+    if (isLast) {
+      box.parentElement.title = "At least one has to be shown";
+    } else if (!box.disabled) {
+      box.parentElement.removeAttribute("title");
+    }
+  }
+}
+markLastOne();
+
 for (const box of switches) {
   box.addEventListener("change", () => {
+    if (![...switches].some((other) => other.checked)) {
+      box.checked = true;   // that was the last one: put it back
+      return;
+    }
     // classList.toggle(name, on): add the class when "on" is true, remove it when false
     grid.classList.toggle(`hide-${box.value}`, !box.checked);
     saveChoice();
+    markLastOne();
   });
 }
+
+// Save what the page shows right now, too: after a fresh visit (see app.py) the page starts from the default,
+// and the saved choice must follow, or the next page of the site would bring the old choice back.
+saveChoice();

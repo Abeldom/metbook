@@ -8,13 +8,14 @@ from database import (DATABASE_FILE, init_database, add_contact, get_all_contact
                       get_contact_by_id, update_contact, add_meeting, get_meetings,
                       update_meeting, delete_meeting, simplify,
                       get_all_labels, set_contact_labels,
-                      add_meeting_photos, delete_meeting_photos, set_meeting_labels)
+                      add_meeting_photos, delete_meeting_photos, set_meeting_labels, get_place_options)
 import os
 import sqlite3
 import tempfile
 import zipfile
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from markupsafe import Markup, escape
 from PIL import Image, ImageOps   # Pillow: opens and resizes pictures
 
 # Create the application object. __name__ tells Flask where this file lives,
@@ -197,6 +198,16 @@ def nice_date(text):
 app.add_template_filter(simplify)
 
 
+@app.template_filter("name_wrap")
+def name_wrap(name):
+    """
+    A name for the cards where a name with a hyphen (Anita-Szilvia) is never broken at the hyphen: the
+    whole word moves to the next line. (Every word with a hyphen gets a <span class="nowrap">.)
+    """
+    words = [str(escape(word)) for word in str(name).split(" ")]
+    return Markup(" ".join(f'<span class="nowrap">{word}</span>' if "-" in word else word for word in words))
+
+
 # How many people the People page shows at first, and how many more
 # each click on "Show more" adds
 PAGE_SIZE = 50
@@ -205,19 +216,23 @@ PAGE_SIZE = 50
 # {code name: what the switch says}. Shown when nothing was chosen yet: only the name, with the
 # notes. (Labels and First met are off until you switch them on. Sorted by First met, the
 # dates are shown anyway: see forced_parts in people().)
-CARD_PARTS = {"name": "Name", "notes": "Notes", "firstmet": "First met", "labels": "Labels"}
-DEFAULT_CARD_PARTS = {"name", "notes"}
+CARD_PARTS = {"name": "Name", "origin": "Originally from", "notes": "Notes", "firstmet": "First met", "labels": "Labels"}
+DEFAULT_CARD_PARTS = {"name", "origin", "notes"}
 
 # The two layouts of the People cards: {code name: what the button says}.
 LAYOUTS = {"compact": "Compact", "large": "Large"}
 DEFAULT_LAYOUT = "compact"
 
 # The places the search box can look in: {code name: what the switch says}.
-# "events" = the notes and labels of the meetings.
-SEARCH_SCOPES = {"name": "Names", "notes": "Notes", "events": "Events", "labels": "Labels"}
-# Until you choose otherwise, the search looks only in the names. Switch on Notes, Events or
-# Labels under "Advanced search" to search there too.
+# "events" = the notes and labels of the meetings. (Labels have no switch: use "Filter by" > Labels. Everywhere still
+# searches the label names too.)
+SEARCH_SCOPES = {"name": "Names", "notes": "Notes", "events": "Meetings"}
+# Until you choose otherwise, the search looks only in the names. Switch on Notes or Meetings
+# under "Filter" to search there too.
 DEFAULT_SEARCH_SCOPES = {"name"}
+# "Everywhere" (all the above ticked) also looks in these: the label names, where they live, where they come from and
+# the dates of their meetings. They have no tick box of their own; Everywhere is "really everything".
+EVERYWHERE_EXTRA_SCOPES = {"labels", "livesin", "origin", "dates"}
 
 
 # Each label always gets the same color: its id picks one from this list.
@@ -228,6 +243,12 @@ LABEL_COLORS = ["tag-accent", "tag-accent-2", "tag-neutral"]
 @app.template_filter("label_color")
 def label_color(label_id):
     return LABEL_COLORS[label_id % len(LABEL_COLORS)]
+
+
+@app.context_processor
+def backup_link_switch():
+    """Makes {{ show_backup_link }} available in every template (see SHOW_BACKUP_LINK)."""
+    return {"show_backup_link": SHOW_BACKUP_LINK}
 
 
 @app.context_processor
@@ -266,6 +287,15 @@ def ticked_label_ids():
     return [int(value) for value in request.form.getlist("labels") if value.isdigit()]
 
 
+def place_fields():
+    """
+    The two optional short texts of a contact form: where they live ("Lives in") and where they come from
+    ("Originally from"). Spaces at the ends are removed and each is cut at 100 characters.
+    """
+    return (request.form.get("lives_in", "").strip()[:100],
+            request.form.get("origin", "").strip()[:100])
+
+
 def label_form_data(current_ids=()):
     """
     What the label picker on the add/edit forms needs: every label, and
@@ -300,6 +330,10 @@ def about():
 # and you copy it somewhere safe (a cloud drive, a USB stick).
 
 # A small text file that remembers when the last backup was made. It's not in git.
+# Is the "Backup" link shown in the footer of every page? It is switched OFF for now. The whole backup feature is still
+# here (the /backup page, the download, the reminder): to show the link again, change False to True and restart the app.
+SHOW_BACKUP_LINK = False
+
 LAST_BACKUP_FILE = "last_backup.txt"
 
 # Where the zip is built before it's sent: a folder inside the computer's temp folder
@@ -423,28 +457,52 @@ def people():
     # ?match=all: people with ALL the chosen labels. Otherwise: with ANY of them.
     match = "all" if request.args.get("match") == "all" else "any"
 
+    # The place filters: ?lives=Cluj-Napoca&lives=Budapest (people who live in one of those places) and
+    # ?origin=Hargita (people who come from there). Like the label filter they leave the other contacts out completely.
+    lives_values = [place.strip() for place in request.args.getlist("lives") if place.strip()]
+    origin_values = [place.strip() for place in request.args.getlist("origin") if place.strip()]
+
+    # The pills for the place filters. A place that is in the address but that nobody has (an old link) is added with
+    # (0), so the pills still show what is filtered. "Selected" = the chosen places, simplified, to compare with.
+    place_options = get_place_options()
+    for column, wanted_places in (("lives_in", lives_values), ("origin", origin_values)):
+        known = [simplify(place) for place, count in place_options[column]]
+        for wanted in wanted_places:
+            if simplify(wanted) not in known:
+                place_options[column].append((wanted, 0))
+                known.append(simplify(wanted))
+    lives_selected = {simplify(place) for place in lives_values}
+    origin_selected = {simplify(place) for place in origin_values}
+
     # Where to search: ?in=name&in=notes (what the form sends), or the choice saved in the
     # "search_in_2" cookie ("name.notes", written by people-search.js), or the default: only the
     # names. & keeps only places we know.
     # (The "_2" is new: an older cookie called "search_in" held the old default, everywhere,
     # and is simply ignored, so everyone starts with the new default once.)
     wanted_scopes = set(request.args.getlist("in")) & set(SEARCH_SCOPES)
-    if not wanted_scopes:
+    # Sec-Fetch-Site is "none" when YOU opened the page yourself (typed address, bookmark, a new tab) and
+    # "same-origin" for a link inside the site, Back or a refresh. A fresh visit starts again from the default.
+    fresh_visit = request.headers.get("Sec-Fetch-Site") == "none"
+    if not wanted_scopes and not fresh_visit:
         saved_scopes = request.cookies.get("search_in_2", "")
         wanted_scopes = set(saved_scopes.split(".")) & set(SEARCH_SCOPES)
-    search_scopes = wanted_scopes or set(DEFAULT_SEARCH_SCOPES)
+    # Names are always searched (the Names box can't be switched off), so they are added to whatever was chosen.
+    search_scopes = (wanted_scopes or set(DEFAULT_SEARCH_SCOPES)) | {"name"}
 
     # The label filter leaves out the other contacts completely.
     # The search only HIDES cards: that way, while you type,
     # static/js/people-search.js can show and hide them instantly.
-    contacts = get_all_contacts(sort_by=sort_by, label_ids=label_ids, match=match)
+    contacts = get_all_contacts(sort_by=sort_by, label_ids=label_ids, match=match,
+                                lives_in=lives_values, origin=origin_values)
 
     # When the page is opened with ?q=..., the server decides who to hide at
     # first. {...} with "for" makes a "set": a bag of ids, quick to check.
     matching_ids = None
     if search:
+        # All four ticked = "Everywhere": then the extra places are searched too
+        where_to_search = search_scopes | EVERYWHERE_EXTRA_SCOPES if set(SEARCH_SCOPES) <= search_scopes else search_scopes
         matches = get_all_contacts(sort_by=sort_by, search=search, label_ids=label_ids, match=match,
-                                   scopes=search_scopes)
+                                   scopes=where_to_search)
         matching_ids = {c["id"] for c in matches}
 
     # Only the first PAGE_SIZE matching cards are shown; "Show more" adds
@@ -461,33 +519,23 @@ def people():
     # How many matching people are still hidden behind "Show more"
     remaining = max(match_number - limit, 0)
 
-    # Which parts of the cards to show (the "Show:" switches). The choice is
-    # kept in a cookie: a small piece of text the browser stores for this site
-    # and sends back with every request. static/js/people-view.js writes it.
-    # None = never chosen yet, so we use the default.
-    # Two cookies:
-    #  - "people_view_4": Name, Labels and First met. A "session cookie": it lasts until the browser is
-    #    closed, so every time you open the app again "Show" starts from the default (Name and Notes).
-    #    (The number is raised whenever the defaults change: the older cookies, "people_view",
-    #    "people_view_2" and "people_view_3" (that one was kept for a year), are simply ignored.)
-    #  - "people_notes_now": Notes only, also a session cookie: Notes start ticked again on every new visit.
-    # The cookies are written as "<BOOT_ID>~<choice>" (static/js/people-view.js). One that was written
-    # before the last start of the server doesn't start with the current BOOT_ID: it is ignored.
-    saved_view = request.cookies.get("people_view_4", "")
-    saved_view = saved_view[len(BOOT_ID) + 1:] if saved_view.startswith(BOOT_ID + "~") else None
-    if saved_view is None:
-        saved_parts = DEFAULT_CARD_PARTS - {"notes"}
-    else:
-        # "labels.firstmet" -> {"labels", "firstmet"}; & keeps only names we know.
-        # - {"notes"}: an older cookie may still say "notes"; that is ignored.
-        saved_parts = (set(saved_view.split(".")) & set(CARD_PARTS)) - {"notes"}
-    if request.cookies.get("people_notes_now") != BOOT_ID + "~0":   # "~0" = you switched Notes off this visit
-        saved_parts = saved_parts | {"notes"}
+    # Which parts of the cards to show (the "Show:" switches). The choice is kept in a cookie: a small
+    # piece of text the browser stores for this site and sends back with every request.
+    # static/js/people-view.js writes it ("people_show_2", e.g. "name.notes.labels") and it lasts a year, so
+    # "Show" looks the same every time you open the app, like "Layout". No cookie yet (or nothing
+    # we know in it) = the default, Name and Notes.
+    # (Older cookies like "people_view_4" and "people_notes_now" are simply ignored now.)
+    # A fresh visit (you opened the page yourself: see fresh_visit above) starts again from the default.
+    saved_view = "" if fresh_visit else request.cookies.get("people_show_2", "")
+    saved_parts = set(saved_view.split(".")) & set(CARD_PARTS)   # & keeps only names we know
+    if not saved_parts:
+        saved_parts = set(DEFAULT_CARD_PARTS)
+    saved_parts.add("name")   # the name is always shown (its switch is locked on)
 
     # Sorted by "first met"? Then the dates are always shown, so you can see
     # why the cards are in this order. | joins two sets: saved_parts + firstmet.
     # (Only for this page: the saved choice itself doesn't change.)
-    forced_parts = {"firstmet"} if sort_by == "firstmet" else set()
+    forced_parts = {"name", "firstmet"} if sort_by == "firstmet" else {"name"}
     shown_parts = saved_parts | forced_parts
 
     # The layout of the cards: "compact" (a round picture at the left of the name) or "large"
@@ -505,7 +553,10 @@ def people():
                            boot_id=BOOT_ID,
                            card_parts=CARD_PARTS, shown_parts=shown_parts,
                            saved_parts=saved_parts, forced_parts=forced_parts,
+                           place_options=place_options, lives_values=lives_values, origin_values=origin_values,
+                           lives_selected=lives_selected, origin_selected=origin_selected,
                            search_scope_options=SEARCH_SCOPES, search_scopes=search_scopes,
+                           search_everywhere=set(SEARCH_SCOPES) <= search_scopes,
                            search_scopes_changed=search_scopes != DEFAULT_SEARCH_SCOPES,
                            limit=limit, page_size=PAGE_SIZE, remaining=remaining)
 
@@ -521,6 +572,7 @@ def add_contact_page():
         name = request.form.get("name", "").strip()
         notes = request.form.get("notes", "").strip()
         date_met = request.form.get("date_met", "").strip()
+        lives_in, origin = place_fields()
 
         # **label_form_data() unpacks its dictionary into extra arguments
         # (all_labels=..., ticked_label_ids=...) for the label picker.
@@ -530,11 +582,8 @@ def add_contact_page():
             return render_template("add_contact.html", error="Name is required!",
                                    **label_form_data())
 
-        # Validate: the date first met is required (it becomes their first meeting) and must look right
-        if not date_met:
-            return render_template("add_contact.html", error="Date first met is required!",
-                                   **label_form_data())
-        if not parse_date(date_met):
+        # Validate: the date first met is optional, but if one is given it must look right
+        if date_met and not parse_date(date_met):
             return render_template("add_contact.html", error=DATE_ERROR,
                                    **label_form_data())
 
@@ -551,10 +600,11 @@ def add_contact_page():
                     **label_form_data())
 
         # Add to database (with or without picture)
-        contact_id = add_contact(name, notes, picture_filename)
+        contact_id = add_contact(name, notes, picture_filename, lives_in, origin)
 
-        # The "date first met" becomes the first meeting on their timeline
-        add_meeting(contact_id, date_met)
+        # The "date first met" becomes the first meeting on their timeline (no date: no meeting)
+        if date_met:
+            add_meeting(contact_id, date_met)
 
         # The ticked labels, plus any new ones typed in
         set_contact_labels(contact_id, ticked_label_ids(),
@@ -627,7 +677,7 @@ def edit_contact_page(contact_id):
         elif request.form.get("remove_picture"):
             picture_path = None
 
-        update_contact(contact_id, name, notes, picture_path)
+        update_contact(contact_id, name, notes, picture_path, *place_fields())
         set_contact_labels(contact_id, ticked_label_ids(),
                            parse_label_names(request.form.get("new_labels", "")))
 

@@ -6,6 +6,8 @@
 // label, choose or remove a photo, pick a date) it is switched on and becomes the strong, filled button; if
 // you put everything back the way it was, it is switched off again. This also stops Enter from saving an
 // unchanged form.
+// In every one of these forms the Save button also stays pale while a date box holds something that is not a real date
+// (see date-check.js): typing "2" or "2026-13" is not enough.
 // A form with the attribute data-require-filled (the "Add a meeting" forms) goes one step further: its Save button
 // stays pale until every required field (the date) has something in it, even when other fields are filled in.
 // This is also used by the "add" forms (a new meeting, a new contact): their Save button is pale until you
@@ -13,6 +15,8 @@
 // form-check.js appears.)
 // Exception: a form the server showed again after a mistake (the window opened again, data-open-on-load, or an
 // error message above the form) has what you had typed in it, so its button is on from the start.
+
+import { isValidDate } from "./date-check.js";
 
 // A form as one piece of text: every field's name and value. A chosen file counts by its name and size.
 function snapshot(form) {
@@ -32,12 +36,20 @@ for (const form of document.querySelectorAll("form[data-track-changes]")) {
     || form.parentElement.querySelector(":scope > .error") !== null;
   const needsFilled = form.hasAttribute("data-require-filled");
   const required = [...form.elements].filter((field) => field.required);
+  const dateBoxes = [...form.elements].filter((field) => field.hasAttribute("data-date-picker"));
   const original = snapshot(form);
 
   function check() {
     const changed = afterMistake || snapshot(form) !== original;
     const filled = !needsFilled || required.every((field) => field.value.trim() !== "");
-    const unchanged = !(changed && filled);   // pale and switched off: nothing to save yet, or a required field is empty
+    // A date box must hold a real date ("2026", "2026-09" or "2026-09-22"): typing just "2" is not enough yet
+    // (An empty date box is fine when the date is optional, like "Date First Met"; a required one is checked above and
+    // in the edit forms, where an empty date is no date.)
+    const datesRight = dateBoxes.every((box) => {
+      const text = box.value.trim();
+      return text === "" ? !box.required : isValidDate(text);
+    });
+    const unchanged = !(changed && filled && datesRight);   // pale and switched off: nothing to save yet, a required field is empty, or a date is not right
     saveButton.classList.toggle("is-unchanged", unchanged);
     saveButton.disabled = unchanged;
   }

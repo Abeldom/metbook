@@ -222,7 +222,11 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .person-name, .detail h1 {
   font-family: "Fraunces", Georgia, serif; font-weight: 800; font-variation-settings: "SOFT" 100;
 }
-.person-name { font-size: 16px; line-height: 1.2; overflow-wrap: anywhere; }
+.person-name { font-size: 16px; line-height: 1.2; overflow-wrap: anywhere; text-wrap: balance; }   /* balance: two lines of about the same length */
+.nowrap { white-space: nowrap; }   /* a name with a hyphen is not broken at the hyphen */
+/* Where they live: a short line under the name ("Lives in Cluj-Napoca"), the place itself a little darker */
+.person-place { font-size: 12px; color: var(--color-neutral-700); overflow-wrap: anywhere; }
+.person-place strong { font-weight: 600; color: var(--color-text); }
 .person-date { font-size: 12px; font-style: italic; color: var(--color-neutral-700); }   /* italic: so it does not blend into the notes above */
 /* "Show more" button under the cards, in the middle */
 .show-more-row { display: flex; justify-content: center; margin-top: 28px; }
@@ -241,6 +245,7 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   .person-name { font-size: 13.5px; }
   .person-notes { font-size: 11.5px; }
   .person-date { font-size: 11px; }
+  .person-place { font-size: 11px; }
 }
 
 /* ---- Layout "large": the big picture above the name (the other layout choice, set under
@@ -264,6 +269,7 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .layout-large .person-name { font-size: 18px; line-height: 1.15; }
 .layout-large .person-notes { font-size: 13.5px; line-height: 1.45; margin-top: 2px; text-wrap: balance; }   /* centered lines of nearly equal length */
 .layout-large .person-date { font-size: 12.5px; }
+.layout-large .person-place { font-size: 12.5px; }
 .layout-large .person-labels { justify-content: safe center; }
 .layout-options { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 600px) {
@@ -276,6 +282,7 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   .layout-large .person-name { font-size: 15px; }
   .layout-large .person-notes { font-size: 12.5px; }
   .layout-large .person-date { font-size: 12px; }
+  .layout-large .person-place { font-size: 12px; }
 }
 
 .avatar {
@@ -525,7 +532,8 @@ input[type="file"]::file-selector-button {
 .people-grid.hide-name .person-name,
 .people-grid.hide-labels .person-labels,
 .people-grid.hide-notes .person-notes,
-.people-grid.hide-firstmet .person-date { display: none; }
+.people-grid.hide-firstmet .person-date,
+.people-grid.hide-origin .person-place { display: none; }
 
 /* A date box with a calendar button next to it (date-picker.js).
    position: relative: the hidden calendar sits in the corner, so its pop-up opens right here. */
@@ -754,6 +762,11 @@ body.lightbox-open { overflow: hidden; }
   display: grid; gap: 14px; margin-top: 10px; padding: 14px;
   border: 1px solid var(--color-divider); border-radius: var(--radius-md);
 }
+/* The two small headings of the Filter panel ("Search in" and "Filter by"): small capitals in dark brown, like the NOTES and
+   MEETINGS captions. The second one has a thin line above it, so the panel falls into two clear parts. The negative
+   bottom margin keeps a heading closer to its own rows than to the part above. */
+.panel-heading { margin: 0 0 -6px; font-family: var(--font-body); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-accent-800); }
+.panel-heading-second { margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--color-divider); }
 /* The rows already had their own space above them: inside the box the gap above does it */
 .advanced-body > * { margin-top: 0; }
 @media (max-width: 600px) {
@@ -1019,3 +1032,29 @@ body.quickview-open { overflow: hidden; }
   .form-actions .btn { flex: 1 1 0; min-width: 0; padding-left: 12px; padding-right: 12px; justify-content: center; white-space: nowrap; }
   .form-actions .btn svg { display: none; }   /* the small check mark: no room for it in half a narrow screen */
 }
+
+/* Two short fields side by side ("Lives in" and "Originally from"); each is at least 200px wide, so on a phone they are
+   one under the other */
+.field-row { display: flex; flex-wrap: wrap; gap: 20px; }
+.field-row > .field { flex: 1 1 200px; min-width: 0; }
+
+/* Where they live and where they come from: small lines under the name (on the contact's page and in the popup). Only
+   what is filled in is there; the place itself is darker than the words around it. */
+.detail-places, .qv-places { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 14px; margin: 0; font-size: 14px; color: var(--color-neutral-700); }
+.detail-places strong, .qv-places strong { font-weight: 600; color: var(--color-text); }
+.qv-places { justify-content: flex-start; margin-top: 2px; font-size: 13px; }
+
+/* The last ticked "Show" switch cannot be switched off */
+.view-option-last { cursor: not-allowed; }
+
+/* "What filters the list right now": small pills under the search bar. Each one is a link that removes that filter. */
+.active-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.active-filter {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 12px; font-size: 14px;
+  color: var(--color-text); text-decoration: none; background: var(--color-accent-100, var(--color-neutral-100));
+  border: 1px solid var(--color-accent-500); border-radius: 999px;
+}
+.active-filter-title { color: var(--color-neutral-700); }
+.active-filter strong { font-weight: 600; }
+.active-filter:hover { background: var(--color-neutral-100); }
+.active-filter:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }

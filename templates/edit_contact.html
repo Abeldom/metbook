@@ -34,6 +34,20 @@
                    value="{{ request.form.get('name', contact.name) }}" required>
         </div>
 
+        {# Where they live and where they come from: two short optional texts, side by side (one under the other on a phone) #}
+        <div class="field-row">
+            <div class="field">
+                <label for="lives_in">Lives in</label>
+                <input class="input" type="text" id="lives_in" name="lives_in" maxlength="100" placeholder="e.g. Cluj-Napoca"
+                       value="{{ request.form.get('lives_in', contact.lives_in or '') }}">
+            </div>
+            <div class="field">
+                <label for="origin">Originally from</label>
+                <input class="input" type="text" id="origin" name="origin" maxlength="100" placeholder="e.g. Hargita"
+                       value="{{ request.form.get('origin', contact.origin or '') }}">
+            </div>
+        </div>
+
         {# Notes right after the picture, then the labels (same order as "Add a New Contact") #}
         <div class="field">
             <label for="notes">Notes</label>

@@ -23,6 +23,14 @@
 
         <h1>{{ contact.name }}</h1>
 
+        {# Where they live and where they come from (only what is filled in) #}
+        {% if contact.lives_in or contact.origin %}
+        <p class="detail-places">
+            {% if contact.lives_in %}<span>Lives in <strong>{{ contact.lives_in }}</strong></span>{% endif %}
+            {% if contact.origin %}<span>Originally from <strong>{{ contact.origin }}</strong></span>{% endif %}
+        </p>
+        {% endif %}
+
         {# The labels are only shown here (they are not links) #}
         {% if contact.labels %}
         <div class="detail-labels">
@@ -77,6 +85,20 @@
                 <label for="edit-contact-name">Name *</label>
                 <input class="input" type="text" id="edit-contact-name" name="name"
                        value="{{ request.form.get('name', contact.name) if edit_contact_error else contact.name }}" required>
+            </div>
+
+            {# Where they live and where they come from: two short optional texts, side by side (one under the other on a phone) #}
+            <div class="field-row">
+                <div class="field">
+                    <label for="edit-contact-lives_in">Lives in</label>
+                    <input class="input" type="text" id="edit-contact-lives_in" name="lives_in" maxlength="100" placeholder="e.g. Cluj-Napoca"
+                           value="{{ request.form.get('lives_in', contact.lives_in or '') if edit_contact_error else contact.lives_in or '' }}">
+                </div>
+                <div class="field">
+                    <label for="edit-contact-origin">Originally from</label>
+                    <input class="input" type="text" id="edit-contact-origin" name="origin" maxlength="100" placeholder="e.g. Hargita"
+                           value="{{ request.form.get('origin', contact.origin or '') if edit_contact_error else contact.origin or '' }}">
+                </div>
             </div>
 
             <div class="field">

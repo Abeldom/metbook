@@ -9,6 +9,8 @@
 //   Years   - (tap the title again) tap a year to see its months
 // The text box is still the one the server reads; the calendar only fills it in.
 
+import { isValidDate } from "./date-check.js";   // "is this text a date the server accepts?" (shared with form-changes.js)
+
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
                 "August", "September", "October", "November", "December"];
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];   // the week starts on Monday
@@ -22,24 +24,8 @@ const CALENDAR_ICON = `
 
 const pad = (number) => String(number).padStart(2, "0");
 
-// Is this text a date the server accepts? "2026", "2026-09" or "2026-09-22", and a real one (not 2026-02-30).
-// (The same rules as parse_date() in app.py.)
-function isValidDate(text) {
-  const match = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(text);
-  if (!match) {
-    return false;
-  }
-  const year = Number(match[1]);
-  const month = match[2] === undefined ? 1 : Number(match[2]);
-  const day = match[3] === undefined ? 1 : Number(match[3]);
-  if (year < 1 || month < 1 || month > 12 || day < 1) {
-    return false;
-  }
-  return day <= new Date(year, month, 0).getDate();   // day 0 of the next month = the last day of this one
-}
-
 // How long to wait after the last key before saying a date is wrong (milliseconds)
-const WRONG_DATE_DELAY = 3000;
+const WRONG_DATE_DELAY = 2500;
 
 // A little helper: make an element, with a class and some text
 function make(tag, className, text) {

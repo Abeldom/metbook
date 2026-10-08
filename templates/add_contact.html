@@ -15,7 +15,7 @@
     </div>
     {% endif %}
 
-    <form class="card form-card" method="POST" enctype="multipart/form-data" data-track-changes>
+    <form class="card form-card" method="POST" enctype="multipart/form-data" data-track-changes data-require-filled>
         {# The photo first, as in the design: a round picture with a +, and an "Upload a photo" button
            (templates/_photo_picker.html, static/js/photo-picker.js). #}
         {% include "_photo_picker.html" %}
@@ -27,14 +27,28 @@
         </div>
 
         <div class="field">
-            <label for="date_met">Date First Met *</label>
+            <label for="date_met">Date First Met</label>
             {# data-date-picker: static/js/date-picker.js adds a calendar button next to this box #}
             <input class="input" type="text" id="date_met" name="date_met" placeholder="{{ date_example }}"
-                   value="{{ request.form.get('date_met', '') }}" required data-date-picker>
+                   value="{{ request.form.get('date_met', '') }}" data-date-picker>
             <span class="hint">{{ date_hint }}</span>
         </div>
 
-        {# The two required fields come first (name, date); then the notes and the labels. #}
+        {# Where they live and where they come from: two short optional texts, side by side (one under the other on a phone) #}
+        <div class="field-row">
+            <div class="field">
+                <label for="lives_in">Lives in</label>
+                <input class="input" type="text" id="lives_in" name="lives_in" maxlength="100" placeholder="e.g. Cluj-Napoca"
+                       value="{{ request.form.get('lives_in', '') }}">
+            </div>
+            <div class="field">
+                <label for="origin">Originally from</label>
+                <input class="input" type="text" id="origin" name="origin" maxlength="100" placeholder="e.g. Hargita"
+                       value="{{ request.form.get('origin', '') }}">
+            </div>
+        </div>
+
+        {# The name (required) and the date first met (optional) come first; then the notes and the labels. #}
         <div class="field">
             <label for="notes">Notes</label>
             <textarea class="input" id="notes" name="notes" placeholder="e.g. Met at EgyetemistaIfi. Brother of Daniel. Lives in Cluj-Napoca. Likes driving.">{{ request.form.get('notes', '') }}</textarea>

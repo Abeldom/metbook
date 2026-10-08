@@ -10,7 +10,12 @@
        page can keep them. url_for turns a list into label=3&label=5 in the address.
        ?match only matters with 2 or more labels. #}
     {% set label_param = label_ids or none %}
-    {% set match_param = match if label_ids|length > 1 else none %}
+    {# How many things are chosen in "Filter by" (labels and places). "Any / All" matters from 2 on. #}
+    {% set filter_count = label_ids|length + lives_values|length + origin_values|length %}
+    {% set match_param = match if filter_count > 1 else none %}
+    {# The place filters (kept in the links, like the labels) #}
+    {% set lives_param = lives_values or none %}
+    {% set origin_param = origin_values or none %}
 
     {# The title row: the title at the left, the "Add New Contact" button (the main action of this
        page) at the right. There is no counter ("1114 saved") any more. #}
@@ -31,7 +36,7 @@
             <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
             <input class="input" type="search" name="q" value="{{ search }}" autocomplete="off"
                    placeholder="Search contacts" aria-label="Search contacts">
-            <a class="search-clear" href="{{ url_for('people', sort=current_sort, label=label_param, match=match_param) }}" aria-label="Clear search" {% if not search %}hidden{% endif %}>
+            <a class="search-clear" href="{{ url_for('people', sort=current_sort, label=label_param, match=match_param, lives=lives_param, origin=origin_param) }}" aria-label="Clear search" {% if not search %}hidden{% endif %}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </a>
             {# The Search button sits INSIDE the search box, at its right end: one single bar #}
@@ -43,6 +48,34 @@
         <input type="hidden" name="sort" value="{{ current_sort }}">
     </form>
 
+    {# What is filtering the list right now (labels and places), one small pill each. The cross is a link to this same
+       page without that one thing, so one tap removes it. Nothing is shown when nothing is filtered. The search text
+       has its own cross inside the search box. The pieces are made first (a list of (title, text, address)), so the
+       row is only drawn when there is at least one. #}
+    {% set active = [] %}
+    {% for label in all_labels if label.id in label_ids %}
+        {% set rest = label_ids|reject('equalto', label.id)|list %}
+        {% set _ = active.append(('Label', label.name, url_for('people', sort=current_sort, q=search or none, label=rest or none, match=match if filter_count > 2 else none, lives=lives_param, origin=origin_param))) %}
+    {% endfor %}
+    {% for place in origin_values %}
+        {% set rest = origin_values|reject('equalto', place)|list %}
+        {% set _ = active.append(('Originally from', place, url_for('people', sort=current_sort, q=search or none, label=label_param, match=match if filter_count > 2 else none, lives=lives_param, origin=rest or none))) %}
+    {% endfor %}
+    {% for place in lives_values %}
+        {% set rest = lives_values|reject('equalto', place)|list %}
+        {% set _ = active.append(('Lives in', place, url_for('people', sort=current_sort, q=search or none, label=label_param, match=match if filter_count > 2 else none, lives=rest or none, origin=origin_param))) %}
+    {% endfor %}
+    {% if active %}
+    <div class="active-filters" role="group" aria-label="Active filters">
+        {% for title, text, address in active %}
+        <a class="active-filter" href="{{ address }}" title="Remove this filter" aria-label="Remove filter {{ title }}: {{ text }}">
+            <span class="active-filter-title">{{ title }}:</span> <strong>{{ text }}</strong>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {# Two buttons under the search bar, each opening its own panel below:
          "Filter" = which people do I get?  -> Search in, Filter by label
          "View"   = how do I see them?      -> Sort by, Show, Layout
@@ -51,8 +84,9 @@
        it does. static/js/advanced-search.js opens and closes the panels when you tap the buttons,
        and remembers what you opened or closed yourself. Without JavaScript both panels simply
        stay open. (is-open is the class that means "open", aria-expanded tells screen readers.) #}
-    {% set filter_open = label_ids or search_scopes_changed %}
-    {% set view_open = current_sort != 'name' %}
+    {% set filter_open = label_ids or lives_values or origin_values or search_scopes_changed %}
+    {# Only ONE panel is open at a time: when both would open, Filter wins (it decides who is in the list) #}
+    {% set view_open = current_sort != 'name' and not filter_open %}
     <div class="search-menus">
         <button type="button" class="advanced-toggle" data-menu="filter" aria-controls="panel-filter" aria-expanded="{{ 'true' if filter_open else 'false' }}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
@@ -75,8 +109,10 @@
        outside it, so without JavaScript they're sent too (?in=name&in=notes).
        At least one stays on: people-search.js doesn't let you switch off the last one.
        The choice is saved in a cookie by the script. #}
+    {# Two small headings divide this panel into its two jobs: "Search in" (WHERE the text of the search box is looked for;
+       this changes at once) and "Filter by" (who is left in the list; this changes when you press Search). #}
+    <h3 class="panel-heading">Search in</h3>
     <div class="scope-options" role="group" aria-label="Where to search">
-        <span class="view-options-title">Search in:</span>
         {% for scope, title in search_scope_options.items() %}
         <label class="scope-option">
             <input type="checkbox" name="in" value="{{ scope }}" form="people-search"
@@ -84,7 +120,41 @@
             <span>{{ title }}</span>
         </label>
         {% endfor %}
+        {# "Everywhere": ticks all the places above at once (people-search.js). It is not a place itself: it has no name, so it is
+           never sent. It is ticked by itself when all the others are on. #}
+        <label class="scope-option">
+            <input type="checkbox" data-everywhere{% if search_everywhere %} checked{% endif %}>
+            <span>Everywhere</span>
+        </label>
     </div>
+
+    {# Filter by where people live and where they come from: the places people have been given, as pills with how many people
+       each has: the same pills as the labels below. Like the labels, tapping one only ticks it: the list changes when you
+       press "Search". Several places of the same kind mean "any of them". form="people-search" makes the pills part of the
+       search form. #}
+    {% if place_options.origin or all_labels %}
+    <h3 class="panel-heading panel-heading-second">Filter by</h3>
+    {% endif %}
+    {% if place_options.origin %}
+    <nav class="label-filter place-filter" aria-label="Filter by place">
+        {% for field, title, options, selected in [('origin', 'Originally from:', place_options.origin, origin_selected)] %}
+        {% if options %}
+        <div class="label-filter-row">
+            <span class="label-filter-title">{{ title }}</span>
+            <div class="label-chips">
+                {% for place, count in options %}
+                <label class="label-chip-box">
+                    <input type="checkbox" name="{{ field }}" value="{{ place }}" form="people-search"
+                           {% if place|simplify in selected %}checked{% endif %}>
+                    <span class="label-chip">{{ place }} <span class="label-filter-count">{{ count }}</span></span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </nav>
+    {% endif %}
 
 
     {# Label filter: one checkbox per label (styled as a pill, like "Search in"). Tapping a label
@@ -98,7 +168,7 @@
     {% if all_labels %}
     <nav class="label-filter" aria-label="Filter by label">
         <div class="label-filter-row">
-        <span class="label-filter-title">Filter by label:</span>
+        <span class="label-filter-title">Labels:</span>
         {# .label-chips: with more than two rows of labels it stays two rows high and scrolls #}
         <div class="label-chips">
         {% for label in all_labels %}
@@ -110,31 +180,36 @@
         {% endfor %}
         </div>
         </div>
-
-        <div class="label-filter-actions" {% if not label_ids %}hidden{% endif %}>
-            <div class="seg label-match" role="radiogroup" aria-label="How to combine the chosen labels"
-                 {% if label_ids|length < 2 %}hidden{% endif %}>
-                <label class="seg-opt">
-                    <input type="radio" name="match" value="any" form="people-search" {% if match != 'all' %}checked{% endif %}>
-                    <span>Any of these</span>
-                </label>
-                <label class="seg-opt">
-                    <input type="radio" name="match" value="all" form="people-search" {% if match == 'all' %}checked{% endif %}>
-                    <span>All of these</span>
-                </label>
-            </div>
-            {# type="button": it only un-ticks the labels (label-filter.js); it doesn't send the form #}
-            <button type="button" class="label-clear">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                Clear labels
-            </button>
-        </div>
-        {# Shown by label-filter.js when you have changed the search options (labels, Any / All, "Search in") since the list was last searched #}
-        <p class="search-pending" role="status" hidden>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-            The search options changed. Press Search to update the list.
-        </p>
     </nav>
+    {% endif %}
+
+    {# At the bottom of "Filter by": "Any / All" (only with 2 or more labels) and "Clear filters", which un-ticks all the labels
+       AND places at once (nothing is searched until you press Search). static/js/label-filter.js shows and hides them.
+       The note about changed options is here too, so it is there whenever there is anything to filter by. #}
+    {% if place_options.origin or all_labels %}
+    <div class="label-filter-actions" {% if not (label_ids or lives_values or origin_values) %}hidden{% endif %}>
+        <div class="seg label-match" role="radiogroup" aria-label="How to combine the chosen labels and places"
+             {% if filter_count < 2 %}hidden{% endif %}>
+            <label class="seg-opt">
+                <input type="radio" name="match" value="any" form="people-search" {% if match != 'all' %}checked{% endif %}>
+                <span>Any of these</span>
+            </label>
+            <label class="seg-opt">
+                <input type="radio" name="match" value="all" form="people-search" {% if match == 'all' %}checked{% endif %}>
+                <span>All of these</span>
+            </label>
+        </div>
+        {# type="button": it only un-ticks the labels (label-filter.js); it doesn't send the form #}
+        <button type="button" class="label-clear">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            Clear filters
+        </button>
+    </div>
+    {# Shown by label-filter.js when you have changed the search options (labels, places, Any / All, "Search in") since the list was last searched #}
+    <p class="search-pending" role="status" hidden>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        The search options changed. Press Search to update the list.
+    </p>
     {% endif %}
 
     </div>{# end of the FILTER panel #}
@@ -148,8 +223,8 @@
         <div class="sort-options">
             <span class="view-options-title">Sort by:</span>
             <div class="seg" role="group" aria-label="Sort contacts">
-                <a href="{{ url_for('people', sort='name', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'name' %}aria-current="true"{% endif %}>A–Z (Name)</a>
-                <a href="{{ url_for('people', sort='firstmet', q=search or none, label=label_param, match=match_param) }}" {% if current_sort == 'firstmet' %}aria-current="true"{% endif %}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> First met</a>
+                <a href="{{ url_for('people', sort='name', q=search or none, label=label_param, match=match_param, lives=lives_param, origin=origin_param) }}" {% if current_sort == 'name' %}aria-current="true"{% endif %}>A–Z (Name)</a>
+                <a href="{{ url_for('people', sort='firstmet', q=search or none, label=label_param, match=match_param, lives=lives_param, origin=origin_param) }}" {% if current_sort == 'firstmet' %}aria-current="true"{% endif %}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> First met</a>
             </div>
         </div>
 
@@ -164,7 +239,7 @@
             <span class="view-options-title">Show:</span>
             {% for part, title in card_parts.items() %}
             {% set forced = part in forced_parts %}
-            <label class="view-option" {% if forced %}title="Always shown while sorting by {{ title }}"{% endif %}>
+            <label class="view-option" {% if part == 'name' %}title="The name is always shown"{% elif forced %}title="Always shown while sorting by {{ title }}"{% endif %}>
                 <input type="checkbox" value="{{ part }}" {% if part in shown_parts %}checked{% endif %}
                        {% if forced %}disabled data-saved="{{ 1 if part in saved_parts else 0 }}"{% endif %}>
                 <span>{{ title }}</span>
@@ -194,6 +269,19 @@
        applied RIGHT HERE, as a plain inline script, before the list of people below is drawn. A module script
        only runs after the whole page has loaded, so the panel would pop open a moment late. #}
     <script>
+        // Opened from OUTSIDE the site (typed address, bookmark, a link from another site): a fresh start, so forget which
+        // panels were open. Coming from a page of this site (a link, "Back to Contacts"), Back or a reload keeps them.
+        // (navigation type "navigate" = a new visit; an empty or foreign referrer = not from a page of this site.)
+        try {
+            const visit = performance.getEntriesByType("navigation")[0];
+            const fromHere = document.referrer.startsWith(location.origin + "/");
+            if (visit && visit.type === "navigate" && !fromHere) {
+                sessionStorage.removeItem("menuOpen-filter");
+                sessionStorage.removeItem("menuOpen-view");
+            }
+        } catch (error) {
+            // not important
+        }
         for (const menu of ["filter", "view"]) {
             try {
                 const saved = sessionStorage.getItem("menuOpen-" + menu);
@@ -205,6 +293,12 @@
                 // storage can be blocked: then the server's choice stays
             }
         }
+        // Only one panel at a time (an older remembered state may have both open): Filter wins
+        if (document.getElementById("panel-filter").classList.contains("is-open")
+            && document.getElementById("panel-view").classList.contains("is-open")) {
+            document.getElementById("panel-view").classList.remove("is-open");
+            document.querySelector('[data-menu="view"]').setAttribute("aria-expanded", "false");
+        }
     </script>
 
     {% if contacts %}
@@ -215,9 +309,9 @@
        aria-live="polite": screen readers read the new number out when it changes. #}
     {# "found" is added whenever the list is narrowed: by the search text or by chosen labels
        (data-labels-on: the labels are already applied on this page; people-search.js reads it) #}
-    <p class="search-result" aria-live="polite" data-labels-on="{{ 'yes' if label_ids else 'no' }}" {% if search and shown == 0 %}hidden{% endif %}>
+    <p class="search-result" aria-live="polite" data-labels-on="{{ 'yes' if label_ids or lives_values or origin_values else 'no' }}" {% if search and shown == 0 %}hidden{% endif %}>
         <strong class="search-result-count">{{ shown }}</strong>
-        <span class="search-result-text">{{ 'contact' if shown == 1 else 'contacts' }}{% if search or label_ids %} found{% endif %}</span>
+        <span class="search-result-text">{{ 'contact' if shown == 1 else 'contacts' }}{% if search or label_ids or lives_values or origin_values %} found{% endif %}</span>
     </p>
     {% endif %}
 
@@ -225,7 +319,7 @@
         <div class="card empty no-results" {% if not (search and shown == 0) %}hidden{% endif %}>
             <span class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
             <h2>No one matches “<span class="no-results-query">{{ search }}</span>”</h2>
-            <p>Try a shorter word, or <a href="{{ url_for('people', sort=current_sort, label=label_param, match=match_param) }}">clear the search</a>.</p>
+            <p>Try a shorter word, or <a href="{{ url_for('people', sort=current_sort, label=label_param, match=match_param, lives=lives_param, origin=origin_param) }}">clear the search</a>.</p>
         </div>
 
         {# For every part that's switched off, the grid gets a class like "hide-notes",
@@ -248,6 +342,10 @@
                data-notes="{{ contact.notes|simplify }}"
                data-events="{{ [contact.meeting_notes, contact.meeting_label_names]|select|join(' ')|simplify }}"
                data-labels="{{ contact.labels|map(attribute='name')|join(' ')|simplify }}"
+               data-livesin="{{ contact.lives_in|simplify }}"
+               data-origin="{{ contact.origin|simplify }}"
+               data-dates="{{ contact.meeting_dates|simplify }}"
+
                {% if not contact.visible %}hidden{% endif %}>
                 <div class="person-photo">
                     {% if contact.picture_path %}
@@ -259,7 +357,9 @@
                     {% endif %}
                 </div>
                 <div class="person-body">
-                <div class="person-name">{{ contact.name }}</div>
+                <div class="person-name">{{ contact.name|name_wrap }}</div>
+                {# Where they come from: a short line under the name, shown when the "Originally from" switch is on #}
+                {% if contact.origin %}<div class="person-place">Originally from <strong>{{ contact.origin }}</strong></div>{% endif %}
                 {% if contact.labels %}
                 {# The labels stay on ONE line. All of them are in the HTML, and
                    static/js/card-labels.js shows as many as fit in the card's width,
@@ -287,7 +387,7 @@
            right away instead of loading the page again. #}
         <div class="show-more-row" {% if remaining == 0 %}hidden{% endif %}>
             <a class="btn btn-secondary show-more"
-               href="{{ url_for('people', sort=current_sort, q=search or none, label=label_param, match=match_param, limit=limit + page_size) }}">
+               href="{{ url_for('people', sort=current_sort, q=search or none, label=label_param, match=match_param, lives=lives_param, origin=origin_param, limit=limit + page_size) }}">
                 Show more <span class="show-more-left">({{ remaining }} left)</span>
             </a>
         </div>

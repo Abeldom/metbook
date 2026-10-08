@@ -17,6 +17,13 @@
     </div>
     <div class="qv-title">
         <h2 id="qv-name">{{ contact.name }}</h2>
+        {# Where they live and where they come from (only what is filled in) #}
+        {% if contact.lives_in or contact.origin %}
+        <p class="qv-places">
+            {% if contact.lives_in %}<span>Lives in <strong>{{ contact.lives_in }}</strong></span>{% endif %}
+            {% if contact.origin %}<span>Originally from <strong>{{ contact.origin }}</strong></span>{% endif %}
+        </p>
+        {% endif %}
         {# The labels sit under the name, beside the picture, where there is room #}
         {% if contact.labels %}
         <div class="qv-labels">

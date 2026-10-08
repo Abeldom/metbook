@@ -46,7 +46,7 @@
     </main>
 
     <footer class="site-footer">
-        <p>&copy; 2026 Metbook. A learning project. <a class="footer-link" href="{{ url_for('backup_page') }}">Backup</a></p>
+        <p>&copy; 2026 Metbook. A learning project.{% if show_backup_link %} <a class="footer-link" href="{{ url_for('backup_page') }}">Backup</a>{% endif %}</p>
     </footer>
 
     {# "Back to top" button: static/js/to-top.js shows it after you scroll down #}

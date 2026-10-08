@@ -3,6 +3,7 @@
 # SQLite is built into Python. It stores data in a file called contacts.db
 # We write functions here to add, get, delete, and search contacts and meetings.
 
+import re
 import sqlite3
 import unicodedata
 
@@ -29,6 +30,16 @@ def simplify(text):
     """
     text = unicodedata.normalize("NFKD", (text or "").casefold())
     return "".join(ch for ch in text if not unicodedata.combining(ch))
+
+
+def sort_name(name):
+    """
+    The name as it is sorted: without anything in (brackets). "(Domokos) Kürti Abigail" is sorted like
+    "Kürti Abigail", so it stands among the K's, not at the very top. (Only for sorting: the name stays as it is.)
+    """
+    without = re.sub(r"\([^)]*\)", " ", name or "")
+    without = " ".join(without.split())
+    return without or (name or "")
 
 
 def init_database():
@@ -126,12 +137,20 @@ def init_database():
         cursor.execute("ALTER TABLE contacts DROP COLUMN date_met")
         print("✓ Moved old 'date met' values into the meetings table")
 
+    # Migration: two short, optional pieces of information about a person: where they live ("lives_in") and where
+    # they come from ("origin"). Older databases don't have these columns yet: add them (empty for everybody who is
+    # already there). Adding a column changes no existing data.
+    for column in ("lives_in", "origin"):
+        if column not in columns:
+            cursor.execute(f"ALTER TABLE contacts ADD COLUMN {column} TEXT")
+            print(f"✓ Added the '{column}' column to the contacts table")
+
     conn.commit()
     conn.close()
     print("✓ Database initialized (contacts, meetings, photos and labels tables ready)")
 
 
-def add_contact(name, notes="", picture_path=""):
+def add_contact(name, notes="", picture_path="", lives_in="", origin=""):
     """
     Add a new contact to the database.
 
@@ -139,6 +158,8 @@ def add_contact(name, notes="", picture_path=""):
         name (str): Person's name (required)
         notes (str): Notes about them (optional)
         picture_path (str): Filename of the picture (optional)
+        lives_in (str): Where they live, e.g. a city (optional)
+        origin (str): Where they come from, e.g. their home town (optional)
 
     Returns:
         int: The ID of the new contact
@@ -148,9 +169,9 @@ def add_contact(name, notes="", picture_path=""):
 
     # INSERT adds a new row to the table
     cursor.execute("""
-        INSERT INTO contacts (name, notes, picture_path)
-        VALUES (?, ?, ?)
-    """, (name, notes, picture_path))
+        INSERT INTO contacts (name, notes, picture_path, lives_in, origin)
+        VALUES (?, ?, ?, ?, ?)
+    """, (name, notes, picture_path, lives_in, origin))
 
     contact_id = cursor.lastrowid  # get the ID of what we just added
 
@@ -160,7 +181,7 @@ def add_contact(name, notes="", picture_path=""):
     return contact_id
 
 
-def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scopes=None):
+def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scopes=None, lives_in="", origin=""):
     """
     Get all contacts from the database, or only the ones matching a search.
 
@@ -172,11 +193,17 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scope
         scopes (set): WHERE to search: any of "name" (the name), "notes" (the
                       notes about the person), "events" (the notes and labels
                       of their meetings), "labels" (the person's own labels).
-                      None = all four.
+                      None = everything: these four, and also where they live, where they come from
+                      ("livesin", "origin") and the dates of their meetings ("dates"), which only
+                      the "Everywhere" tick box looks in.
         label_ids (list): Only return contacts with these labels (on the person
                           or on one of their meetings). Empty = everyone.
-        match (str): "any" = people with at least one of the labels,
-                     "all" = people with every one of them
+        match (str): how the chosen labels and places are joined:
+                     "any" = people who fit at least one of them,
+                     "all" = people who fit every one of them (the places of one kind count as one)
+        lives_in (list): Only return people who live in one of these places (the whole text, ignoring
+                         capitals and accents). Empty = everyone. (A single text works too.)
+        origin (list): Only return people who come from one of these places (the same way).
 
     Returns:
         list: List of dictionaries, each one is a contact
@@ -190,6 +217,7 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scope
 
     # Teach SQLite our Python simplify() function, so SQL can call it too
     conn.create_function("simplify", 1, simplify, deterministic=True)
+    conn.create_function("sort_name", 1, sort_name, deterministic=True)
 
     # Sort by name (A-Z) or by when you first met (newest first).
     # COLLATE NOCASE makes sorting case-insensitive (A and a are the same).
@@ -198,9 +226,9 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scope
     # others, so sorting by it first puts the people without a date at the end.
     # After that: newest first; and people with the same date go A-Z.
     if sort_by == "firstmet":
-        order = "ORDER BY first_met IS NULL, first_met DESC, name COLLATE NOCASE ASC"
+        order = "ORDER BY first_met IS NULL, first_met DESC, sort_name(name) COLLATE NOCASE ASC, name COLLATE NOCASE ASC"
     else:  # default to name
-        order = "ORDER BY name COLLATE NOCASE ASC"
+        order = "ORDER BY sort_name(name) COLLATE NOCASE ASC, name COLLATE NOCASE ASC"
 
     # WHERE keeps only the rows that match. We collect the conditions in a
     # list, then glue them together with AND (a contact must pass all of them).
@@ -232,16 +260,26 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scope
                                   JOIN labels ON labels.id = contact_labels.label_id
                                   WHERE contact_labels.contact_id = contacts.id
                                     AND instr(simplify(labels.name), ?) > 0)""", 1),
+            # Three more places that only "Everywhere" looks in (they have no tick box of their own): where they
+            # live, where they come from, and the dates of their meetings (as stored: 2026-09-22)
+            "livesin": ("instr(simplify(contacts.lives_in), ?) > 0", 1),
+            "origin": ("instr(simplify(contacts.origin), ?) > 0", 1),
+            "dates": ("""EXISTS (SELECT 1 FROM meetings
+                                  WHERE meetings.contact_id = contacts.id
+                                    AND instr(simplify(meetings.date), ?) > 0)""", 1),
         }
         chosen = [name for name in pieces if scopes is None or name in scopes] or list(pieces)
         conditions.append("(" + " OR ".join(pieces[name][0] for name in chosen) + ")")
         for name in chosen:
             params += [simplify(search)] * pieces[name][1]
 
-    if label_ids:
-        # "This contact has label ?": the person has the label themselves,
-        # OR one of their meetings has it
-        has_label = """(
+    # The label and place filters work together. Every chosen label is one check ("has this label": the person has it
+    # themselves OR one of their meetings has it). The chosen places of one kind are ONE check together ("comes from
+    # one of these": a person has only one place, so they can't be from two). Then ONE choice joins all the checks:
+    # "any" = at least one of them is true (OR), "all" = every one of them is true (AND).
+    checks = []        # pieces of SQL, one per check
+    check_params = []  # the ? values of those pieces, in the same order
+    has_label = """(
             EXISTS (SELECT 1 FROM contact_labels
                     WHERE contact_labels.contact_id = contacts.id
                       AND contact_labels.label_id = ?)
@@ -250,11 +288,22 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scope
                        WHERE meetings.contact_id = contacts.id
                          AND meeting_labels.label_id = ?)
         )"""
-        # One check per chosen label, glued with OR ("any" of them) or AND ("all" of them)
+    for label_id in label_ids:
+        checks.append(has_label)
+        check_params += [label_id, label_id]   # each check has two ? for the same label
+
+    # The place checks: the whole text must be one of the chosen places (ignoring capitals and accents).
+    for column, chosen_places in (("lives_in", lives_in), ("origin", origin)):
+        if isinstance(chosen_places, str):
+            chosen_places = [chosen_places] if chosen_places else []
+        if chosen_places:
+            checks.append(f"simplify(contacts.{column}) IN ({', '.join('?' * len(chosen_places))})")
+            check_params += [simplify(place) for place in chosen_places]
+
+    if checks:
         glue = " AND " if match == "all" else " OR "
-        conditions.append("(" + glue.join([has_label] * len(label_ids)) + ")")
-        for label_id in label_ids:
-            params += [label_id, label_id]   # each check has two ? for the same label
+        conditions.append("(" + glue.join(checks) + ")")
+        params += check_params
 
     where = ""
     if conditions:
@@ -271,6 +320,8 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scope
                 WHERE meetings.contact_id = contacts.id) AS first_met,
                (SELECT group_concat(notes, ' ') FROM meetings
                 WHERE meetings.contact_id = contacts.id) AS meeting_notes,
+               (SELECT group_concat(date, ' ') FROM meetings
+                WHERE meetings.contact_id = contacts.id) AS meeting_dates,
                (SELECT group_concat(labels.name, ' ') FROM meeting_labels
                 JOIN labels ON labels.id = meeting_labels.label_id
                 JOIN meetings ON meetings.id = meeting_labels.meeting_id
@@ -304,6 +355,30 @@ def get_all_contacts(sort_by="name", search="", label_ids=(), match="any", scope
     conn.close()
 
     return contacts
+
+
+def get_place_options():
+    """
+    The places people have been given, for the two place filters on the People page ("Lives in" and
+    "Originally from"): every different place with how many people have it. "Cluj" and "cluj" count as one place
+    (shown the way most people have it written).
+
+    Returns:
+        dict: {"lives_in": [("Cluj-Napoca", 3), ("Hargita", 1)], "origin": [...]}, each list sorted A-Z
+    """
+    conn = sqlite3.connect(DATABASE_FILE)
+    options = {}
+    for column in ("lives_in", "origin"):
+        counts = {}   # simplified text -> {how it is written: how many people write it that way}
+        for (text,) in conn.execute(f"SELECT {column} FROM contacts WHERE {column} IS NOT NULL AND {column} != ''"):
+            spellings = counts.setdefault(simplify(text), {})
+            spellings[text] = spellings.get(text, 0) + 1
+        options[column] = [
+            (max(spellings, key=spellings.get), sum(spellings.values()))   # the most common way of writing it
+            for key, spellings in sorted(counts.items())
+        ]
+    conn.close()
+    return options
 
 
 def get_contact_by_id(contact_id):
@@ -340,15 +415,17 @@ def get_contact_by_id(contact_id):
     return contact
 
 
-def update_contact(contact_id, name, notes, picture_path):
+def update_contact(contact_id, name, notes, picture_path, lives_in="", origin=""):
     """
-    Change a contact's name, notes and picture.
+    Change a contact's name, notes, picture and places.
 
     Args:
         contact_id (int): Which contact to change
         name (str): New name
         notes (str): New notes
         picture_path (str): New picture filename, or None for no picture
+        lives_in (str): Where they live (empty = not given)
+        origin (str): Where they come from (empty = not given)
 
     Returns:
         bool: True if changed, False if not found
@@ -360,9 +437,9 @@ def update_contact(contact_id, name, notes, picture_path):
     # The WHERE part is important: without it, EVERY contact would be changed!
     cursor.execute("""
         UPDATE contacts
-        SET name = ?, notes = ?, picture_path = ?
+        SET name = ?, notes = ?, picture_path = ?, lives_in = ?, origin = ?
         WHERE id = ?
-    """, (name, notes, picture_path, contact_id))
+    """, (name, notes, picture_path, lives_in, origin, contact_id))
 
     rows_changed = cursor.rowcount
     conn.commit()

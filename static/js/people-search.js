@@ -13,8 +13,12 @@ const input = form.querySelector('input[name="q"]');
 const clearButton = form.querySelector(".search-clear");
 // Every person's card has data-name
 const cards = document.querySelectorAll(".person[data-name]");
-// The "Search in:" switches: Names / Notes / Events / Labels
-const scopeBoxes = [...document.querySelectorAll(".scope-option input")];
+// The "Search in:" switches: Names / Notes / Meetings / Labels
+const scopeBoxes = [...document.querySelectorAll(".scope-option input:not([data-everywhere])")];
+// "Everywhere": a tick box that ticks all the places at once (it is not a place itself). When it is on, the search also
+// looks in three more things that have no tick box: where they live, where they come from and the dates of their meetings.
+const EVERYWHERE_EXTRA = ["labels", "livesin", "origin", "dates"];
+const everywhereBox = document.querySelector("[data-everywhere]");
 // The "3 people found" line below the "Sort by" row
 const result = document.querySelector(".search-result");
 const resultCount = document.querySelector(".search-result-count");
@@ -57,11 +61,18 @@ function chosenScopes() {
   return scopeBoxes.filter((box) => box.checked).map((box) => box.value);
 }
 
+// The places the SEARCH looks in: the ticked ones, plus the extra ones when "Everywhere" is on
+// (chosenScopes() alone is what is saved in the cookie: only the tick boxes)
+function searchScopes() {
+  const scopes = chosenScopes();
+  return everywhereBox && everywhereBox.checked ? scopes.concat(EVERYWHERE_EXTRA) : scopes;
+}
+
 // Show or hide the cards to match what's in the search box (and the limit)
 function update() {
   const query = input.value.trim();
   const wanted = simplify(query);
-  const scopes = chosenScopes();
+  const scopes = searchScopes();
 
   // matching = how many cards match the search so far
   let matching = 0;
@@ -116,29 +127,57 @@ input.addEventListener("input", () => {
 });
 
 // Switching a "Search in:" place on or off searches again at once.
-// The last one can't be switched off (searching nowhere makes no sense):
-// it is locked until you switch another one on.
+// "Names" is always on: it is locked, you can't switch it off (a person is always found by the name).
 function saveScopes() {
   const on = chosenScopes();
   for (const box of scopeBoxes) {
-    box.disabled = on.length === 1 && box.checked;
+    box.disabled = box.value === "name";
+    if (box.value === "name") {
+      box.parentElement.title = "Names are always searched";
+    }
   }
   // Remember the choice in a cookie ("name.notes"), so the page opens like this next time
   // (The "_2": the older cookie "search_in" held the old default and is ignored.)
   document.cookie = `search_in_2=${on.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
-for (const box of scopeBoxes) {
-  box.addEventListener("change", () => {
+// "Everywhere" is ticked exactly when all the places are ticked
+function syncEverywhere() {
+  if (everywhereBox) {
+    everywhereBox.checked = scopeBoxes.every((box) => box.checked);
+  }
+}
+
+if (everywhereBox) {
+  everywhereBox.addEventListener("change", () => {
+    // Ticking it ticks every place; un-ticking it goes back to the first one only (Names), because at least one must stay on
+    scopeBoxes.forEach((box, index) => {
+      box.checked = everywhereBox.checked || index === 0;
+    });
     saveScopes();
     limit = pageSize;
     update();
   });
 }
-// A locked (disabled) checkbox isn't sent with a form: the "submit" below unlocks them first.
+
 for (const box of scopeBoxes) {
-  box.disabled = chosenScopes().length === 1 && box.checked;
+  box.addEventListener("change", () => {
+    syncEverywhere();
+    saveScopes();
+    limit = pageSize;
+    update();
+  });
 }
+// Names are locked on. A locked (disabled) checkbox isn't sent with a form: the "submit" below unlocks them first.
+for (const box of scopeBoxes) {
+  box.disabled = box.value === "name";
+  if (box.value === "name") {
+    box.parentElement.title = "Names are always searched";
+  }
+}
+// Save what the page shows right now, too: after a fresh visit (see app.py) the page starts from the default,
+// and the saved choice must follow, or the next page of the site would bring the old choice back.
+saveScopes();
 
 // "Show more" is a normal link (it works without JavaScript too), but here
 // we show the next cards right away instead of loading the page again
@@ -156,6 +195,7 @@ form.addEventListener("submit", () => {
   for (const box of scopeBoxes) {
     box.disabled = false;
   }
+
 });
 
 // The × button is a normal link (so it also works without JavaScript),
