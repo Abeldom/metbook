@@ -382,6 +382,12 @@ html:not(.js) .meeting-dialog[data-edit-dialog]:not([data-open-on-load]) { displ
 .timeline .meeting .error { margin-bottom: 14px; }
 .meeting-labels { display: flex; flex-wrap: wrap; gap: 4px; }   /* beside the date, in the meeting's top row */
 .meeting-notes { margin: 4px 0 0; line-height: 1.5; color: var(--color-neutral-800); white-space: pre-line; }
+/* Meetings beyond the first 10 are hidden until "Show more" (static/js/more-meetings.js); only when JavaScript works */
+.js .meeting-extra { display: none; }
+.more-meetings-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: -12px; }   /* pulled up close under the last meeting (the card's 16px gap + the meeting row's own space were too much) */
+.more-meetings-row .btn[hidden] { display: none; }
+.more-meetings-row[hidden] { display: none; }
+.more-meetings-left { font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-700); }
 .timeline-empty { margin: 0; color: var(--color-neutral-700); }
 
 /* — meeting photos — */
@@ -519,21 +525,44 @@ input[type="file"]::file-selector-button {
 /* The mini calendar that opens under the date box. position: absolute = it floats over
    the page instead of pushing everything down. */
 .calendar {
-  position: absolute; top: calc(100% + 8px); left: 0; z-index: 30;
+  position: absolute; top: calc(100% + 10px); right: 0; z-index: 30;
   width: min(320px, 100%); padding: 12px;
   background: var(--color-surface); border: 1px solid var(--color-divider);
   border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(60, 40, 20, .18);
 }
+/* "The date format is not correct": under the date box (date-picker.js), in red with a ! like the "Missing: ..." note */
+.date-format-error { margin: 4px 0 0; font-size: 13px; font-weight: 600; color: #b3261e; }
+.date-format-error[hidden] { display: none; }
+.date-format-error::before {
+  content: "!"; display: inline-block; width: 16px; height: 16px; margin-right: 6px; vertical-align: 1px;
+  border-radius: 50%; background: #b3261e; color: #fff; font-size: 11px; line-height: 16px; text-align: center;
+}
 .calendar[hidden] { display: none; }
+/* The calendar hangs from its button: its right edge lines up with the calendar button, and a little pointer on top
+   points at the button's middle (the button is 44px wide, so its middle is 22px from the right edge; the pointer
+   is 12px wide). So it reads as the button's own pop-over, not as another window. */
+.calendar::before {
+  content: ""; position: absolute; top: -7px; right: 16px; width: 12px; height: 12px;
+  background: var(--color-surface); border-left: 1px solid var(--color-divider); border-top: 1px solid var(--color-divider);
+  transform: rotate(45deg);
+}
 .calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px; }
+/* The title (October 2026) is a button that takes you to the months / years: it looks like one, with an outline
+   and a small arrow. (In the years view it is switched off, and it is plain text.) */
 .calendar-title { flex: 1; font-weight: 700; font-size: 15px; }
+.calendar .calendar-title:not(:disabled) { border: 1px solid var(--color-divider); }
+.calendar-title:not(:disabled)::after { content: "▾"; margin-left: 8px; font-size: 12px; color: var(--color-accent-700); }
 .calendar button {
   font: inherit; color: var(--color-text); background: transparent; border: 0;
   border-radius: 999px; cursor: pointer; min-height: 36px;
 }
 .calendar button:hover:not(:disabled) { background: var(--color-accent-100); color: var(--color-accent-800); }
 .calendar button:disabled { cursor: default; }
-.calendar-nav { width: 36px; font-size: 20px; line-height: 1; }
+/* The arrows: bigger and in the dark brown, with an outline, so they are easy to see and to hit (44px on a phone) */
+.calendar .calendar-nav {
+  width: 40px; min-height: 40px; font-size: 26px; line-height: 1; padding-bottom: 3px;
+  color: var(--color-accent-800); border: 1px solid var(--color-divider);
+}
 /* 7 columns for the days of the week; the months and years use 3 */
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
 .calendar-wide { grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -541,12 +570,6 @@ input[type="file"]::file-selector-button {
 .calendar-cell { font-size: 14px; }
 .calendar-cell.is-today { border: 1px solid var(--color-accent-500); }
 .calendar .calendar-cell[aria-current="true"] { background: var(--color-accent-700); color: var(--color-neutral-100); }
-/* The button under the days / months: choose without a day or without a month */
-.calendar-use {
-  display: block; width: 100%; margin-top: 10px; font-size: 13px;
-  border: 1px solid var(--color-divider) !important;
-}
-
 /* Pictures you can click to see the whole original (lightbox.js). */
 .zoom { display: block; width: 100%; height: 100%; cursor: zoom-in; }
 .avatar .zoom:hover img { filter: brightness(0.94); }
@@ -820,12 +843,25 @@ body.quickview-open { overflow: hidden; }
 /* Long lists scroll inside the window: about four meetings are visible, the rest are a scroll away.
    overscroll-behavior: contain = at the end of the list the scrolling doesn't carry on to the page behind. */
 .qv-meetings {
-  list-style: none; margin: 6px 0 0; padding: 0 4px 0 0; display: grid; gap: 8px;
+  list-style: none; margin: 6px 0 0; padding: 0 4px 0 26px; display: grid; gap: 6px;
   max-height: min(250px, 32vh); overflow-y: auto; overscroll-behavior: contain;
 }
-.qv-meetings li {
-  display: grid; gap: 2px; padding: 8px 12px; border-radius: var(--radius-md); background: var(--color-bg);
+/* The same look as the timeline on the full page: no boxes, only a line and a dot for each meeting.
+   The line is drawn in pieces, one for each meeting (::after), and the dot on it (::before), inside the list's
+   own padding, so that the scrolling list doesn't cut them off. The oldest meeting (the last one, "first met")
+   has the green dot. */
+.qv-meetings li { position: relative; display: grid; gap: 2px; padding: 6px 0; }
+.qv-meetings li::after {
+  content: ""; position: absolute; left: -15px; top: 0; bottom: -6px; width: 2px; background: var(--color-accent-300);
 }
+.qv-meetings li:first-child::after { top: 17px; }     /* the line starts at the first dot */
+.qv-meetings li:last-child::after { bottom: auto; height: 17px; }   /* ... and ends at the last one */
+.qv-meetings li:only-child::after { display: none; }
+.qv-meetings li::before {
+  content: ""; position: absolute; z-index: 1; left: -22px; top: 9px; width: 16px; height: 16px; box-sizing: border-box;
+  border-radius: 50%; background: var(--color-accent); border: 3px solid var(--color-surface);
+}
+.qv-meetings li:last-child::before { background: var(--color-accent-2); }
 .qv-meeting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .qv-meeting-date { font-weight: 600; font-size: 14px; }
 .qv-meeting-photos { font-size: 12px; color: var(--color-neutral-700); }
@@ -857,4 +893,9 @@ body.quickview-open { overflow: hidden; }
 @media (max-width: 600px) {
   .back-link { min-height: 44px; }
   .edit-contact-button { min-height: 44px; }
+}
+
+/* Phone: the calendar's arrows get a 44px tap area */
+@media (max-width: 600px) {
+  .calendar .calendar-nav { width: 44px; min-height: 44px; }
 }

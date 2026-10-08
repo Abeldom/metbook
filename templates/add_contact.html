@@ -15,7 +15,7 @@
     </div>
     {% endif %}
 
-    <form class="card form-card" method="POST" enctype="multipart/form-data">
+    <form class="card form-card" method="POST" enctype="multipart/form-data" data-track-changes>
         {# The photo first, as in the design: a round picture with a +, and an "Upload a photo" button
            (templates/_photo_picker.html, static/js/photo-picker.js). #}
         {% include "_photo_picker.html" %}
@@ -50,4 +50,5 @@
 </div>
 <script type="module" src="{{ url_for('static', filename='js/photo-picker.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/date-picker.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form-changes.js') }}"></script>
 {% endblock %}

@@ -120,6 +120,7 @@ if (dialog && openButton) {
         field.value = "";                        // date, notes, new labels
       }
     }
+    form.dispatchEvent(new Event("input", { bubbles: true }));   // form-changes.js: the Save button looks again
     // Also remove the error message of a failed try, if there was one, and "Missing: ..." (form-check.js)
     for (const message of dialog.querySelectorAll(".error, .form-missing")) {
       message.remove();

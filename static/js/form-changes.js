@@ -6,8 +6,11 @@
 // label, choose or remove a photo, pick a date) it is switched on and becomes the strong, filled button; if
 // you put everything back the way it was, it is switched off again. This also stops Enter from saving an
 // unchanged form.
-// Exception: a window the server opened again after a mistake (data-open-on-load) has what you had typed in
-// it, so its button is on from the start.
+// This is also used by the "add" forms (a new meeting, a new contact): their Save button is pale until you
+// have put something in. (If you then press it with a required field still empty, the "Missing: ..." note of
+// form-check.js appears.)
+// Exception: a form the server showed again after a mistake (the window opened again, data-open-on-load, or an
+// error message above the form) has what you had typed in it, so its button is on from the start.
 
 // A form as one piece of text: every field's name and value. A chosen file counts by its name and size.
 function snapshot(form) {
@@ -23,7 +26,8 @@ for (const form of document.querySelectorAll("form[data-track-changes]")) {
   if (!saveButton) {
     continue;
   }
-  const afterMistake = form.closest("dialog[data-open-on-load]") !== null;
+  const afterMistake = form.closest("dialog[data-open-on-load]") !== null
+    || form.parentElement.querySelector(":scope > .error") !== null;
   const original = snapshot(form);
 
   function check() {

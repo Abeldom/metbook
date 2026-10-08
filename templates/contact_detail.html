@@ -121,7 +121,7 @@
             {% endif %}
 
             {# enctype="multipart/form-data" is needed for a form that sends files #}
-            <form class="meeting-form" method="POST" enctype="multipart/form-data"
+            <form class="meeting-form" method="POST" enctype="multipart/form-data" data-track-changes
                   action="{{ url_for('add_meeting_page', contact_id=contact.id) }}">
                 <div class="field">
                     <label for="meeting-date">Date *</label>
@@ -243,10 +243,13 @@
         {% endfor %}
 
         {% if meetings %}
+        {# Only the newest 10 meetings are shown at first; the others are in the page too, but hidden (the class
+           meeting-extra) until you press "Show more" (static/js/more-meetings.js). Without JavaScript all are shown. #}
+        {% set first_page = 10 %}
         <ol class="timeline">
             {% for meeting in meetings %}
             {# id="meeting-5" lets a link jump straight to this meeting (#meeting-5) #}
-            <li class="meeting {% if loop.last %}first{% endif %}" id="meeting-{{ meeting.id }}">
+            <li class="meeting {% if loop.last %}first{% endif %}{% if loop.index > first_page %} meeting-extra{% endif %}" id="meeting-{{ meeting.id }}">
                 <div class="meeting-head">
                     <time class="meeting-date" datetime="{{ meeting.date }}">{{ meeting.date|nice_date }}</time>
                     {# The meeting's labels (only shown, not links) #}
@@ -284,6 +287,15 @@
             </li>
             {% endfor %}
         </ol>
+        {% if meetings|length > first_page %}
+        <div class="more-meetings-row">
+            <button type="button" class="btn btn-secondary" data-more-meetings data-step="10" data-first="{{ first_page }}">
+                Show more <span class="more-meetings-left">({{ meetings|length - first_page }} left)</span>
+            </button>
+            {# Shown by the script when more than the first meetings are showing: goes back to the first ones #}
+            <button type="button" class="btn btn-secondary" data-less-meetings hidden>Show less</button>
+        </div>
+        {% endif %}
         {% else %}
         <p class="timeline-empty">No meetings yet. Add the first time you met.</p>
         {% endif %}
@@ -300,5 +312,6 @@
 <script type="module" src="{{ url_for('static', filename='js/date-picker.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/photo-picker.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form-changes.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/more-meetings.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/add-meeting.js') }}"></script>
 {% endblock %}

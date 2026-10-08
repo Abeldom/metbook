@@ -4,9 +4,8 @@
 //
 // The mini calendar has three levels, and you choose how exact the date is:
 //   Days    - tap a day                          -> 2026-09-22
-//           - or "Use September 2026"            -> 2026-09     (no day)
 //   Months  - (tap the title to get here) tap a month to see its days
-//           - or "Use 2026"                      -> 2026        (no month, no day)
+//   (A date with only a year or a year and month is typed in the box: 2026 or 2026-09.)
 //   Years   - (tap the title again) tap a year to see its months
 // The text box is still the one the server reads; the calendar only fills it in.
 
@@ -22,6 +21,25 @@ const CALENDAR_ICON = `
   </svg>`;
 
 const pad = (number) => String(number).padStart(2, "0");
+
+// Is this text a date the server accepts? "2026", "2026-09" or "2026-09-22", and a real one (not 2026-02-30).
+// (The same rules as parse_date() in app.py.)
+function isValidDate(text) {
+  const match = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(text);
+  if (!match) {
+    return false;
+  }
+  const year = Number(match[1]);
+  const month = match[2] === undefined ? 1 : Number(match[2]);
+  const day = match[3] === undefined ? 1 : Number(match[3]);
+  if (year < 1 || month < 1 || month > 12 || day < 1) {
+    return false;
+  }
+  return day <= new Date(year, month, 0).getDate();   // day 0 of the next month = the last day of this one
+}
+
+// How long to wait after the last key before saying a date is wrong (milliseconds)
+const WRONG_DATE_DELAY = 3000;
 
 // A little helper: make an element, with a class and some text
 function make(tag, className, text) {
@@ -56,6 +74,42 @@ function setUp(textBox) {
 
   textBox.replaceWith(wrapper);
   wrapper.append(textBox, openButton, popup);
+
+  // The note under the box when what is typed is not a date: "The date format is not correct. Use ..."
+  // It comes a moment after you stop typing (not while you are still in the middle of it), goes away
+  // as soon as the date is right or the box is empty, and also stops the form from being sent.
+  const note = make("p", "date-format-error");
+  note.setAttribute("role", "alert");
+  note.hidden = true;
+  wrapper.after(note);
+  let timer = null;
+
+  function checkFormat() {
+    const text = textBox.value.trim();
+    const wrong = text !== "" && !isValidDate(text);
+    if (wrong) {
+      note.textContent = `The date format is not correct.`;
+    }
+    note.hidden = !wrong;
+    return !wrong;
+  }
+
+  textBox.addEventListener("input", () => {
+    clearTimeout(timer);
+    if (isValidDate(textBox.value.trim()) || textBox.value.trim() === "") {
+      note.hidden = true;                                 // fine already: no note
+    } else {
+      timer = setTimeout(checkFormat, WRONG_DATE_DELAY);  // maybe still typing: wait a moment
+    }
+  });
+  textBox.addEventListener("blur", checkFormat);           // leaving the box: say it at once
+  // Pressing Save with a wrong date: say it and don't send the form
+  textBox.form.addEventListener("submit", (event) => {
+    if (!checkFormat()) {
+      event.preventDefault();
+      textBox.focus();
+    }
+  });
 
   // What the calendar is showing right now
   let view = "days";            // "days", "months" or "years"
@@ -113,6 +167,7 @@ function setUp(textBox) {
       const step = (n) => { const d = new Date(year, month + n, 1); year = d.getFullYear(); month = d.getMonth(); render(); };
       popup.append(header(`${MONTHS[month]} ${year}`, () => { view = "months"; render(); },
                           () => step(-1), () => step(1), "Previous month", "Next month"));
+      popup.querySelector(".calendar-title").title = "Choose another month or year";
 
       const grid = make("div", "calendar-grid");
       for (const name of WEEKDAYS) grid.append(make("span", "calendar-weekday", name));
@@ -130,11 +185,11 @@ function setUp(textBox) {
         grid.append(cell);
       }
       popup.append(grid);
-      popup.append(makeButton("calendar-use", `Use ${MONTHS[month]} ${year} (no day)`, () => choose(`${year}-${pad(month + 1)}`)));
 
     } else if (view === "months") {
       popup.append(header(String(year), () => { yearPage = year - (year % YEARS_PER_PAGE); view = "years"; render(); },
                           () => { year--; render(); }, () => { year++; render(); }, "Previous year", "Next year"));
+      popup.querySelector(".calendar-title").title = "Choose another year";
       const grid = make("div", "calendar-grid calendar-wide");
       MONTHS.forEach((name, i) => {
         const cell = makeButton("calendar-cell", name.slice(0, 3), () => { month = i; view = "days"; render(); });
@@ -142,7 +197,6 @@ function setUp(textBox) {
         grid.append(cell);
       });
       popup.append(grid);
-      popup.append(makeButton("calendar-use", `Use ${year} (no month)`, () => choose(String(year))));
 
     } else {
       const last = yearPage + YEARS_PER_PAGE - 1;

@@ -168,10 +168,10 @@ def parse_date(text):
     Turn "2026", "2026-09" or "2026-09-22" into a datetime object.
     Returns None if the text isn't one of those shapes or isn't a real date
     (like 2026-02-30). We are strict on purpose: meetings are sorted as text,
-    which only works when months and days always have two digits.
+    which only works when months and days always have two digits and the digits are 0-9.
     """
     date_format = DATE_FORMATS.get(len(text))
-    if not date_format:
+    if not date_format or not text.isascii():   # only the digits 0-9 (not e.g. full-width or Arabic ones)
         return None
     try:
         return datetime.strptime(text, date_format)
