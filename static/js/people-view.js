@@ -6,6 +6,9 @@
 
 const grid = document.querySelector(".people-grid");
 const switches = document.querySelectorAll(".view-option input");
+// The server writes a number into the page that changes every time the server starts (data-boot).
+// It goes into the cookies below, so a choice made before a restart of the server is not used any more.
+const boot = grid.dataset.boot;
 
 // Is this switch on in YOUR saved choice? A locked (disabled) switch, like
 // First met while sorting by first met, is ticked for now, but your own choice
@@ -22,14 +25,16 @@ function saveChoice() {
   // A cookie is a small piece of text the browser keeps for this site and
   // sends back to the server with every request.
   //   path=/                 -> for every page of the site
-  //   max-age=31536000       -> keep it for one year (in seconds)
   //   SameSite=Lax           -> don't send it along when other sites link here in the background
+  // No max-age: this is a "session cookie", forgotten when the browser is closed. So every time you
+  // open the app again, "Show" starts from the default (Name and Notes), and what you switch
+  // on or off stays only for this visit. It also starts again after the server was restarted:
+  // the value is written as "<boot number>~<choice>" and the server ignores an old boot number.
   // (The number at the end goes up whenever the defaults change, so older cookies are ignored.)
-  document.cookie = `people_view_3=${others.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
+  document.cookie = `people_view_4=${boot}~${others.join(".")}; path=/; SameSite=Lax`;
 
-  // Notes get a "session cookie" (no max-age): it is forgotten when the browser is closed,
-  // so Notes start ticked again the next time you open the app. "1" = on, "0" = off.
-  document.cookie = `people_notes_now=${chosen.includes("notes") ? 1 : 0}; path=/; SameSite=Lax`;
+  // Notes have their own cookie ("1" = on, "0" = off), also forgotten when the browser is closed.
+  document.cookie = `people_notes_now=${boot}~${chosen.includes("notes") ? 1 : 0}; path=/; SameSite=Lax`;
 }
 
 // The "Layout:" buttons (Compact / Large). Choosing one changes the class of the card grid

@@ -58,6 +58,23 @@ document.addEventListener("click", (event) => {
   }
 });
 
+// "Edit Contact" at the top of the page shows the person's window (already in the page, closed): no
+// reload either. Without JavaScript (or with Ctrl / Shift / Cmd + click) it is a normal link to the edit page.
+document.addEventListener("click", (event) => {
+  const link = event.target.closest("[data-edit-contact]");
+  if (!link || event.button !== 0 || event.ctrlKey || event.shiftKey || event.metaKey || event.altKey) {
+    return;
+  }
+  const box = document.getElementById("edit-contact-dialog");
+  if (box) {
+    event.preventDefault();
+    box.showModal();
+    if (window.matchMedia("(hover: hover)").matches) {
+      box.querySelector("#edit-contact-name").focus();
+    }
+  }
+});
+
 // "Cancel" in an Edit window: throw away what you changed (the fields go back to the meeting as it was
 // saved), then close.
 for (const button of document.querySelectorAll("[data-reset-meeting]")) {
@@ -107,7 +124,7 @@ if (dialog && openButton) {
     for (const message of dialog.querySelectorAll(".error, .form-missing")) {
       message.remove();
     }
-    const extras = dialog.querySelector(".more-notes");   // "Advanced notes" folds back too
+    const extras = dialog.querySelector(".more-notes");   // "Labels and photos" folds back too
     if (extras) {
       extras.open = false;
     }

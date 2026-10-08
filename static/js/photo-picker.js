@@ -67,6 +67,9 @@ if (root) {
     chooseButton.textContent = hasNew || hasCurrent ? "Upload new photo" : "Upload a photo";
     removeButton.hidden = !(hasNew || hasCurrent || removed);
     removeButton.textContent = hasNew ? "Discard" : removed ? "Undo" : "Remove photo";
+
+    // Tell the form (form-changes.js listens) that the photo part has changed
+    root.closest("form").dispatchEvent(new Event("photochange"));
   }
 
   // Put a file into the file input, the same as if it had been picked in the file window.
@@ -104,6 +107,12 @@ if (root) {
   chooseButton.addEventListener("click", () => input.click());
   // A file was picked in that window
   input.addEventListener("change", () => setFile(input.files[0] || null));
+
+  // "Cancel" in the popup window resets the whole form. Then the round picture and the buttons must go back
+  // to the saved photo too (a reset empties the file input by itself, but doesn't tell this script).
+  root.closest("form").addEventListener("reset", () => {
+    setTimeout(() => setFile(null), 0);   // after the reset has happened (it also un-ticks "remove_picture")
+  });
 
   removeButton.addEventListener("click", () => {
     if (input.files.length > 0) {

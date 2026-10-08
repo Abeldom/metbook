@@ -21,6 +21,11 @@ from PIL import Image, ImageOps   # Pillow: opens and resizes pictures
 # so it can later find our HTML templates and CSS files next to it.
 app = Flask(__name__)
 
+# A new number every time the server starts (e.g. "20261008093015"). The "Show:" choices on the People
+# page are saved together with it, so after a restart of the server the old choices don't match
+# any more and the page starts again from the default (Name and Notes). See people().
+BOOT_ID = datetime.now().strftime("%Y%m%d%H%M%S")
+
 # Configuration for file uploads
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
@@ -461,19 +466,22 @@ def people():
     # and sends back with every request. static/js/people-view.js writes it.
     # None = never chosen yet, so we use the default.
     # Two cookies:
-    #  - "people_view_3": Name, Labels and First met, kept for a year.
-    #    (The number is raised whenever the defaults change: the older cookies, "people_view" and
-    #    "people_view_2", are simply ignored, so everyone starts from the new defaults once.)
-    #  - "people_notes_now": Notes only. A "session cookie": it lasts until the browser is
-    #    closed. So Notes start ticked again on every new visit, and can be changed from there.
-    saved_view = request.cookies.get("people_view_3")
+    #  - "people_view_4": Name, Labels and First met. A "session cookie": it lasts until the browser is
+    #    closed, so every time you open the app again "Show" starts from the default (Name and Notes).
+    #    (The number is raised whenever the defaults change: the older cookies, "people_view",
+    #    "people_view_2" and "people_view_3" (that one was kept for a year), are simply ignored.)
+    #  - "people_notes_now": Notes only, also a session cookie: Notes start ticked again on every new visit.
+    # The cookies are written as "<BOOT_ID>~<choice>" (static/js/people-view.js). One that was written
+    # before the last start of the server doesn't start with the current BOOT_ID: it is ignored.
+    saved_view = request.cookies.get("people_view_4", "")
+    saved_view = saved_view[len(BOOT_ID) + 1:] if saved_view.startswith(BOOT_ID + "~") else None
     if saved_view is None:
         saved_parts = DEFAULT_CARD_PARTS - {"notes"}
     else:
         # "labels.firstmet" -> {"labels", "firstmet"}; & keeps only names we know.
         # - {"notes"}: an older cookie may still say "notes"; that is ignored.
         saved_parts = (set(saved_view.split(".")) & set(CARD_PARTS)) - {"notes"}
-    if request.cookies.get("people_notes_now") != "0":   # "0" = you switched Notes off this visit
+    if request.cookies.get("people_notes_now") != BOOT_ID + "~0":   # "~0" = you switched Notes off this visit
         saved_parts = saved_parts | {"notes"}
 
     # Sorted by "first met"? Then the dates are always shown, so you can see
@@ -494,6 +502,7 @@ def people():
                            search=search, matching_ids=matching_ids,
                            all_labels=all_labels, current_labels=current_labels,
                            label_ids=label_ids, match=match,
+                           boot_id=BOOT_ID,
                            card_parts=CARD_PARTS, shown_parts=shown_parts,
                            saved_parts=saved_parts, forced_parts=forced_parts,
                            search_scope_options=SEARCH_SCOPES, search_scopes=search_scopes,
@@ -592,9 +601,10 @@ def edit_contact_page(contact_id):
         name = request.form.get("name", "").strip()
         notes = request.form.get("notes", "").strip()
 
+        # A mistake: show the contact's page again, with the edit window open and the error in it
+        # (the window is built into contact_detail.html; edit_contact.html is only for no JavaScript)
         if not name:
-            return render_template("edit_contact.html", contact=contact, error="Name is required!",
-                                   **label_form_data())
+            return show_contact_page(contact, edit_contact_error="Name is required!")
 
         # Picture: keep the current one, unless a new one was chosen
         # or "Remove this picture" was ticked
@@ -605,9 +615,7 @@ def edit_contact_page(contact_id):
         if picture_file and picture_file.filename:
             picture_path = save_upload_file(picture_file)
             if not picture_path:
-                return render_template("edit_contact.html", contact=contact,
-                    error=IMAGE_ERROR,
-                    **label_form_data())
+                return show_contact_page(contact, edit_contact_error=IMAGE_ERROR)
         elif request.form.get("remove_picture"):
             picture_path = None
 

@@ -52,7 +52,13 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 /* — shared — */
 .page-title { font-size: clamp(32px, 7vw, 48px); line-height: 1.05; margin: 12px 0 8px; }
 .lede { font-size: 17px; line-height: 1.6; color: var(--color-neutral-800); max-width: 46ch; }
-.back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; margin-bottom: 12px; }
+/* "Back to Contacts": 16px, and tall enough (40px; 44px on a phone, see the end of the file) to hit easily with a finger.
+   min-height + a smaller margin keep the space under it about what it was. */
+.back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 16px; font-weight: 500; min-height: 40px; margin-bottom: 4px; }
+/* The "Edit contact" button: at the bottom right of the person's card, a little space above it */
+/* The space above the button (about 12px, from the notes) and below it (18px, to the card's edge), on every screen size. */
+.detail-actions { display: flex; justify-content: flex-end; width: 100%; margin: -12px 0 0; }
+.edit-contact-button { min-height: 40px; padding: 6px 16px; font-size: 14px; gap: 8px; }
 .stack { display: grid; gap: 20px; }
 .card { padding: 24px; box-shadow: var(--shadow-sm); }
 .card h2 { font-size: 24px; margin: 0 0 8px; }
@@ -65,8 +71,17 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 }
 .btn { font-size: 15px; padding: 11px 22px; min-height: 44px; }
 .btn-primary:hover { color: var(--color-bg); }
-.btn-danger { border: 1px solid var(--color-accent-700); color: var(--color-accent-800); background: transparent; }
-.btn-danger:hover { background: var(--color-accent-100); }
+/* The Save button of an edit window while nothing has been changed yet (static/js/form-changes.js): it is switched
+   off (disabled) and shows it with a pale, soft fill and muted text, still a button. As soon as you change
+   something it is the strong filled button again. */
+.btn.btn-primary.is-unchanged, .btn.btn-primary.is-unchanged:hover {
+  background: var(--color-accent-100); border: 1px solid transparent; color: var(--color-neutral-700);
+  box-shadow: none; cursor: not-allowed;
+}
+.btn.btn-primary { transition: background-color .15s, color .15s, border-color .15s; }
+/* Delete buttons are red, so they are clearly a warning and not like the other brown buttons */
+.btn-danger { border: 1px solid #b3261e; color: #b3261e; background: transparent; }
+.btn-danger:hover { background: rgba(179, 38, 30, .09); color: #b3261e; }
 
 /* — home — */
 .hero { display: grid; gap: 32px; align-items: center; padding: 24px 0 40px; }
@@ -203,7 +218,7 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   font-family: "Fraunces", Georgia, serif; font-weight: 800; font-variation-settings: "SOFT" 100;
 }
 .person-name { font-size: 16px; line-height: 1.2; overflow-wrap: anywhere; }
-.person-date { font-size: 12px; color: var(--color-neutral-700); }
+.person-date { font-size: 12px; font-style: italic; color: var(--color-neutral-700); }   /* italic: so it does not blend into the notes above */
 /* "Show more" button under the cards, in the middle */
 .show-more-row { display: flex; justify-content: center; margin-top: 28px; }
 .show-more-left { font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-700); }
@@ -242,7 +257,7 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .layout-large .person-photo svg { width: 44px; height: 44px; }
 .layout-large .person-body { flex: none; padding: 0 6px; }
 .layout-large .person-name { font-size: 18px; line-height: 1.15; }
-.layout-large .person-notes { font-size: 13.5px; line-height: 1.45; margin-top: 2px; }
+.layout-large .person-notes { font-size: 13.5px; line-height: 1.45; margin-top: 2px; text-wrap: balance; }   /* centered lines of nearly equal length */
 .layout-large .person-date { font-size: 12.5px; }
 .layout-large .person-labels { justify-content: safe center; }
 .layout-options { display: flex; align-items: center; gap: 8px; }
@@ -271,7 +286,7 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .empty p { color: var(--color-neutral-700); }
 
 /* — contact detail — */
-.detail { align-items: center; text-align: center; padding: 36px 24px 28px; gap: 16px; }
+.detail { align-items: center; text-align: center; padding: 36px 24px 18px; gap: 16px; }
 .detail h1 { font-size: clamp(30px, 6vw, 40px); margin: 4px 0 0; }
 .facts { display: grid; gap: 12px; width: 100%; text-align: left; margin-top: 8px; }
 /* No box: the notes sit straight on the card, under the small label */
@@ -279,10 +294,12 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 /* The small captions (NOTES, MEETINGS) on a contact's page and in the quick-view popup:
    a little bigger, bold and dark brown, so they stand out */
 .fact-label { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-accent-800); }
-.fact-value { font-size: 16px; line-height: 1.6; margin: 2px 0 0; }
+.fact-value { font-size: 16px; line-height: 1.6; margin: 2px 0 0; text-wrap: pretty; }   /* pretty: no single word alone on the last line */
 /* The Delete button under a contact: small, in the middle */
 .delete-form { display: flex; justify-content: center; width: 100%; margin-top: 20px; }
 .delete-form .btn { padding: 6px 14px; font-size: 13px; min-height: 32px; gap: 6px; }
+/* Inside an edit window: a thin line above it, so it is clearly a separate, deliberate step */
+.meeting-dialog .delete-form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-divider); }
 .detail-sub { margin: 0; font-size: 14px; color: var(--color-neutral-700); }
 
 /* — meetings timeline — */
@@ -308,6 +325,9 @@ body:has(.meeting-dialog[open]) { overflow: hidden; }
 .meeting-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .meeting-dialog-head h2 { margin: 0; font-size: 22px; }
 html:not(.js) .meeting-dialog-head { display: none; }
+/* The person's edit window needs JavaScript; without it the button is a link to the edit page (placed after the
+   rule above that shows meeting windows, so it wins) */
+html:not(.js) .contact-dialog { display: none; }
 /* Without JavaScript only the window that is being edited is shown, the others stay closed */
 html:not(.js) .meeting-dialog[data-edit-dialog]:not([data-open-on-load]) { display: none; }
 .meeting-dialog-close {
@@ -317,17 +337,17 @@ html:not(.js) .meeting-dialog[data-edit-dialog]:not([data-open-on-load]) { displ
 .meeting-dialog-close:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
 .meeting-form { display: grid; gap: 16px; }
 .meeting-form .btn { justify-self: start; }
-/* "Advanced notes": an outlined brown pill with a chevron, the same look as the "Add a meeting"
-   button while its form is open (labels and photos are folded inside) */
+/* The folded section of an add / edit window (labels and photos): NOT a button, but a row across the whole
+   window: a thin line above and below, the words on the left and a chevron on the right (an "accordion").
+   So it can't be mistaken for the buttons, like Save or Delete. */
 .more-notes > summary {
-  display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; user-select: none;
-  min-height: 36px; padding: 6px 14px; border-radius: 999px;
-  border: 1px solid var(--color-accent-700); background: transparent;
-  font-size: 14px; font-weight: 600; color: var(--color-accent-800);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; list-style: none; user-select: none;
+  padding: 12px 2px; border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider);
+  font-size: 15px; font-weight: 600; color: var(--color-text);
 }
 .more-notes > summary::-webkit-details-marker { display: none; }
-.more-notes > summary:hover { background: var(--color-accent-100); }
-.more-notes > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.more-notes > summary:hover { color: var(--color-accent-800); }
+.more-notes > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 4px; }
 .more-notes[open] > summary .advanced-chevron { transform: rotate(180deg); }
 .more-notes-body { display: grid; gap: 16px; margin-top: 14px; }
 
@@ -354,7 +374,7 @@ html:not(.js) .meeting-dialog[data-edit-dialog]:not([data-open-on-load]) { displ
    (position: absolute; the box is position: relative, see above), so they never drop to a
    new line. The date uses the rest of the row: padding-right keeps it away from the icons
    (2 icons of 36px + a 2px gap = 74px, plus a little air). */
-.meeting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-right: 82px; min-height: 36px; }
+.meeting-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-right: 52px; min-height: 36px; }
 .meeting-date { font-weight: 600; }
 .meeting-actions { position: absolute; top: 6px; right: 8px; display: flex; gap: 2px; }
 .meeting-action { width: 36px; height: 36px; min-height: 0; padding: 0; color: var(--color-neutral-700); }
@@ -720,7 +740,7 @@ body.lightbox-open { overflow: hidden; }
   .timeline { margin-left: 6px; padding-left: 18px; gap: 10px; }
   .timeline .meeting { padding: 6px 0; }
   .timeline .meeting::before { left: -29px; top: 18px; }
-  .meeting-head { padding-right: 78px; }
+  .meeting-head { padding-right: 52px; }
   .timeline-head { padding-right: 6px; }
   .add-meeting-open { white-space: nowrap; min-height: 40px; padding: 6px 14px; font-size: 14px; }
   .meeting-dialog { padding: 18px 16px; }
@@ -728,6 +748,12 @@ body.lightbox-open { overflow: hidden; }
 
 /* "Save meeting" and "Cancel" side by side at the end of the add-meeting form */
 .meeting-form-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+/* "Cancel" in the windows: plain text, not a button (so Save is the one button). Still 44px tall to tap. */
+.meeting-form-buttons .btn-secondary {
+  background: transparent; border-color: transparent; box-shadow: none; color: var(--color-accent-800);
+  font-weight: 600; padding-left: 14px; padding-right: 14px;
+}
+.meeting-form-buttons .btn-secondary:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
 
 /* The photo picker of the Add / Edit contact forms (templates/_photo_picker.html,
    static/js/photo-picker.js): a round picture with a + (or the photo), and next to it the title,
@@ -824,5 +850,11 @@ body.quickview-open { overflow: hidden; }
 @media (max-width: 600px) {
   .meeting-actions { top: 4px; right: 4px; gap: 4px; }
   .meeting-action { width: 44px; height: 44px; }
-  .meeting-head { padding-right: 100px; min-height: 44px; }
+  .meeting-head { padding-right: 56px; min-height: 44px; }
+}
+
+/* Phone: the "Back to ..." links get a 44px tall tap area */
+@media (max-width: 600px) {
+  .back-link { min-height: 44px; }
+  .edit-contact-button { min-height: 44px; }
 }

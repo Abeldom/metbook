@@ -70,6 +70,9 @@ function open(link) {
   // A group: all the links with the same name. A single picture: just this link.
   group = name ? [...document.querySelectorAll(`a[data-lightbox="${CSS.escape(name)}"]`)] : [link];
   show(Math.max(group.indexOf(link), 0));
+  // Inside a popup window (a <dialog>) the page behind is "inert" and the window sits above everything,
+  // whatever the z-index. So the viewer is placed INSIDE the open window; otherwise it would be hidden behind it.
+  (document.querySelector("dialog[open]") || document.body).append(overlay);
   overlay.hidden = false;
   document.body.classList.add("lightbox-open");   // the page behind doesn't scroll
   overlay.querySelector(".lightbox-close").focus();
@@ -100,6 +103,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   if (event.key === "Escape") {
+    event.preventDefault();   // closes only the viewer, not also the popup window under it
     close();
   } else if (event.key === "ArrowLeft" && group.length > 1) {
     show(current - 1);

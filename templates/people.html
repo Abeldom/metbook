@@ -233,7 +233,7 @@
         {# data-limit / data-page-size: how many cards are showing, and how many "Show more" adds.
            people-search.js reads them from here. #}
         <div class="people-grid layout-{{ layout }}{% for part in card_parts if part not in shown_parts %} hide-{{ part }}{% endfor %}"
-             data-limit="{{ limit }}" data-page-size="{{ page_size }}">
+             data-limit="{{ limit }}" data-page-size="{{ page_size }}" data-boot="{{ boot_id }}">
             {% for contact in contacts %}
             {# data-name / data-notes / data-events / data-labels: the four places this card can be
                found in, already lowercased and without accents. The script looks only in the
