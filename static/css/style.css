@@ -51,13 +51,18 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 
 /* — shared — */
 .page-title { font-size: clamp(32px, 7vw, 48px); line-height: 1.05; margin: 12px 0 8px; }
+/* A person's name inside a sentence (e.g. on the Add a meeting page): bold and dark brown, so it stands out as a name */
+.lede-name { font-weight: 700; color: var(--color-accent-800); }
 .lede { font-size: 17px; line-height: 1.6; color: var(--color-neutral-800); max-width: 46ch; }
 /* "Back to Contacts": 16px, and tall enough (40px; 44px on a phone, see the end of the file) to hit easily with a finger.
    min-height + a smaller margin keep the space under it about what it was. */
 .back-link { display: inline-flex; align-items: center; gap: 4px; font-size: 16px; font-weight: 500; min-height: 40px; margin-bottom: 4px; }
 /* The "Edit contact" button: at the bottom right of the person's card, a little space above it */
-/* The space above the button (about 12px, from the notes) and below it (18px, to the card's edge), on every screen size. */
-.detail-actions { display: flex; justify-content: flex-end; width: 100%; margin: -12px 0 0; }
+/* The space below the button is 18px (to the card's edge), on every screen size. Above it: 16px of the card's own gap by
+   default (under the name, or under the labels, when there are no notes), but pulled up close (12px) when the notes
+   are right above it, because the notes text has some space of its own under its last line. */
+.detail-actions { display: flex; justify-content: flex-end; width: 100%; margin: 6px 0 0; }
+.facts + .detail-actions { margin-top: -12px; }
 .edit-contact-button { min-height: 40px; padding: 6px 16px; font-size: 14px; gap: 8px; }
 .stack { display: grid; gap: 20px; }
 .card { padding: 24px; box-shadow: var(--shadow-sm); }
@@ -294,7 +299,7 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 /* The small captions (NOTES, MEETINGS) on a contact's page and in the quick-view popup:
    a little bigger, bold and dark brown, so they stand out */
 .fact-label { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-accent-800); }
-.fact-value { font-size: 16px; line-height: 1.6; margin: 2px 0 0; text-wrap: pretty; }   /* pretty: no single word alone on the last line */
+.fact-value { font-size: 16px; line-height: 1.6; margin: 2px 0 0; text-wrap: pretty; white-space: pre-line; }   /* pretty: no single word alone on the last line; pre-line: keep the new lines and paragraphs you typed */
 /* The Delete button under a contact: small, in the middle */
 .delete-form { display: flex; justify-content: center; width: 100%; margin-top: 20px; }
 .delete-form .btn { padding: 6px 14px; font-size: 13px; min-height: 32px; gap: 6px; }
@@ -322,7 +327,12 @@ html:not(.js) .add-meeting-open { display: none; }
 .meeting-dialog::backdrop { background: rgba(40, 28, 18, .5); }
 html:not(.js) .meeting-dialog { display: block; position: static; width: auto; max-height: none; padding: 0; box-shadow: none; background: transparent; }
 body:has(.meeting-dialog[open]) { overflow: hidden; }
-.meeting-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+/* The top row of a window (the title and the x) is "sticky": it stays at the top while the window scrolls. The negative margins
+   stretch it over the window's padding, and its background hides what scrolls under it. */
+.meeting-dialog-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  position: sticky; top: -22px; z-index: 5; background: var(--color-surface); margin: -22px -24px 6px; padding: 22px 24px 8px;
+}
 .meeting-dialog-head h2 { margin: 0; font-size: 22px; }
 html:not(.js) .meeting-dialog-head { display: none; }
 /* The person's edit window needs JavaScript; without it the button is a link to the edit page (placed after the
@@ -331,10 +341,11 @@ html:not(.js) .contact-dialog { display: none; }
 /* Without JavaScript only the window that is being edited is shown, the others stay closed */
 html:not(.js) .meeting-dialog[data-edit-dialog]:not([data-open-on-load]) { display: none; }
 .meeting-dialog-close {
-  width: 36px; height: 36px; flex: none; border: 0; border-radius: 999px; background: transparent;
-  font: inherit; font-size: 26px; line-height: 1; color: var(--color-neutral-700); cursor: pointer;
+  width: 40px; height: 40px; flex: none; border: 0; border-radius: 50%; padding: 0 0 3px;
+  background: var(--color-bg); color: var(--color-accent-800); box-shadow: 0 1px 4px rgba(60, 40, 20, .25);
+  font: inherit; font-size: 26px; line-height: 1; cursor: pointer;
 }
-.meeting-dialog-close:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
+.meeting-dialog-close:hover { background: var(--color-accent-100); color: var(--color-accent-900); }
 .meeting-form { display: grid; gap: 16px; }
 .meeting-form .btn { justify-self: start; }
 /* The folded section of an add / edit window (labels and photos): NOT a button, but a row across the whole
@@ -472,7 +483,6 @@ input[type="file"]::file-selector-button {
 .label-options {
   display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;
   max-height: 84px; overflow-y: auto; padding: 2px; overscroll-behavior: contain;
-  scrollbar-width: thin;
 }
 /* Pill-shaped checkboxes. Used by the label picker (.label-option) and by the
    "Show:" switches on the People page (.view-option): one look for both. */
@@ -628,7 +638,7 @@ body.lightbox-open { overflow: hidden; }
    (the same as the label picker on the forms). */
 .label-chips {
   display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; flex: 1; min-width: 0;
-  max-height: 84px; overflow-y: auto; padding: 2px; overscroll-behavior: contain; scrollbar-width: thin;
+  max-height: 84px; overflow-y: auto; padding: 2px; overscroll-behavior: contain;
 }
 /* The row under the label list: "Any of these | All of these" and "Clear labels" */
 .label-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -767,6 +777,7 @@ body.lightbox-open { overflow: hidden; }
   .timeline-head { padding-right: 6px; }
   .add-meeting-open { white-space: nowrap; min-height: 40px; padding: 6px 14px; font-size: 14px; }
   .meeting-dialog { padding: 18px 16px; }
+  .meeting-dialog-head { top: -18px; margin: -18px -16px 6px; padding: 18px 16px 8px; }
 }
 
 /* "Save meeting" and "Cancel" side by side at the end of the add-meeting form */
@@ -815,11 +826,17 @@ body.quickview-open { overflow: hidden; }
   padding: 24px; border-radius: var(--radius-lg); background: var(--color-surface);
   box-shadow: 0 16px 48px rgba(24, 14, 8, .35); overscroll-behavior: contain;
 }
+/* The x: a round button with a light fill and a dark brown x, so it can be seen. It is "sticky": it stays at the top right
+   of the window while you scroll the window's content under it. (Its negative margins pull it into the window's padding and
+   make it take no room of its own, so the content starts where it always did. A sticky element measures from the inside of
+   the window's padding, so top: -16px = 8px from the window's edge when the padding is 24px.) */
 .quickview-close {
-  position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border: 0; border-radius: 50%;
-  background: transparent; color: var(--color-neutral-700); font: inherit; font-size: 28px; line-height: 1; cursor: pointer;
+  position: sticky; top: -16px; z-index: 6; display: block; width: 40px; height: 40px; margin: -16px -16px -24px auto;
+  border: 0; border-radius: 50%; padding: 0 0 3px;
+  background: var(--color-bg); color: var(--color-accent-800); box-shadow: 0 1px 4px rgba(60, 40, 20, .25);
+  font: inherit; font-size: 26px; line-height: 1; cursor: pointer;
 }
-.quickview-close:hover { background: var(--color-accent-100); color: var(--color-accent-800); }
+.quickview-close:hover { background: var(--color-accent-100); color: var(--color-accent-900); }
 .quickview-close:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .qv-loading { margin: 24px 0; text-align: center; color: var(--color-neutral-700); }
 
@@ -839,13 +856,37 @@ body.quickview-open { overflow: hidden; }
 .qv-first-met { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--color-neutral-700); }
 .qv-labels { margin-top: 8px; }   /* in the title block, under the name and "First met" */
 .qv-section { margin-top: 16px; }
+/* A thin line (and more room) between two parts of the window, e.g. the notes and the meetings, so they don't run
+   together. (The first part has no line above it: it only applies to a part that follows another one.) */
+.qv-section + .qv-section { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--color-divider); }
 .qv-notes { margin: 4px 0 0; line-height: 1.5; color: var(--color-neutral-800); white-space: pre-line; }
-/* Long lists scroll inside the window: about four meetings are visible, the rest are a scroll away.
-   overscroll-behavior: contain = at the end of the list the scrolling doesn't carry on to the page behind. */
-.qv-meetings {
-  list-style: none; margin: 6px 0 0; padding: 0 4px 0 26px; display: grid; gap: 6px;
-  max-height: min(250px, 32vh); overflow-y: auto; overscroll-behavior: contain;
+/* Long notes: only the first 6 lines show in the quick-view window, and the first 15 on a contact's full page, then "..." and a
+   "Show more" button below the text, at the left (static/js/notes-clamp.js). Only when JavaScript works; without
+   it the whole text is shown. */
+.js .notes-clamp:not(.is-open) { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.js .fact-value.notes-clamp:not(.is-open) { -webkit-line-clamp: 15; }   /* a contact's full page: 15 lines (the quick-view window: 6) */
+/* "Show more" / "Show less": quiet text (normal weight) with a small arrow, NOT underlined: an underline would sit
+   right above the divider line below the notes and look like a double line. The arrow points down while the text is
+   cut off, and up when it is open (the script sets aria-expanded). */
+.notes-toggle {
+  display: block; margin: 4px 0 0; padding: 6px 0; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 400; color: var(--color-accent-800);
 }
+.notes-toggle::after { content: "▾"; margin-left: 6px; font-size: 12px; }
+.notes-toggle[aria-expanded="true"]::after { content: "▴"; }
+.notes-toggle:hover { color: var(--color-accent-900); text-decoration: underline; text-underline-offset: 3px; }
+.notes-toggle[hidden] { display: none; }
+/* ONE scrollbar only: the window itself scrolls when everything is taller than the screen (there is no second,
+   inner scroll area for the meetings: two scrollbars next to each other looked bad). */
+.qv-meetings {
+  list-style: none; margin: 6px 0 0; padding: 0 0 0 26px; display: grid; gap: 6px;
+}
+/* Meetings beyond the first 10 wait behind "Show more" (static/js/quick-view.js) */
+.qv-meetings li.qv-extra { display: none; }
+.qv-more-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+.qv-more-row .btn { min-height: 40px; padding: 6px 16px; font-size: 14px; }
+.qv-more-row .btn[hidden] { display: none; }
+.qv-more-left { font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-700); }
 /* The same look as the timeline on the full page: no boxes, only a line and a dot for each meeting.
    The line is drawn in pieces, one for each meeting (::after), and the dot on it (::before), inside the list's
    own padding, so that the scrolling list doesn't cut them off. The oldest meeting (the last one, "first met")
@@ -867,12 +908,20 @@ body.quickview-open { overflow: hidden; }
 .qv-meeting-photos { font-size: 12px; color: var(--color-neutral-700); }
 .qv-meeting-notes { font-size: 13.5px; line-height: 1.4; color: var(--color-neutral-800); white-space: pre-line;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.qv-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-/* "Open full view" and "Edit": the same size (each takes half of the row) */
+/* The "Open full view" button stays at the bottom edge of the window while you scroll the meetings: it has the
+   window's own background and the window's bottom padding (24px; 18px on a phone), so nothing shows under it. */
+.qv-actions {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px;
+  position: sticky; z-index: 3; bottom: -24px; margin-bottom: -24px; padding: 12px 0 24px; background: var(--color-surface);
+}
 .qv-actions .btn { flex: 1 1 0; justify-content: center; text-align: center; }
 @media (max-width: 600px) {
   .quickview { padding: 10px; align-items: flex-end; }                  /* a phone: the panel sits at the bottom */
-  .quickview-panel { padding: 18px; max-height: 90vh; border-radius: 22px; }
+  /* max-height: 100% = as tall as the overlay, which is as tall as the part of the screen you can really see. (A phone
+     browser measures "90vh" as if its address bar at the top were already hidden, so with the bar showing the window
+     was too tall: its top, with the x, slid under the bar and couldn't be pressed.) */
+  .quickview-panel { padding: 18px; max-height: 90vh; max-height: 100%; border-radius: 22px; }
+  .qv-actions { bottom: -18px; margin-bottom: -18px; padding-bottom: 18px; }
   .qv-photo { width: 72px; height: 72px; }
   .qv-title h2 { font-size: 20px; }
 }
@@ -898,4 +947,75 @@ body.quickview-open { overflow: hidden; }
 /* Phone: the calendar's arrows get a 44px tap area */
 @media (max-width: 600px) {
   .calendar .calendar-nav { width: 44px; min-height: 44px; }
+}
+
+/* The scrollbar of the two label lists (the picker in the forms, the filter on the People page) is always visible.
+   On a phone the normal scrollbar is only drawn while you scroll, so you can't see that there are more labels.
+   A styled scrollbar (::-webkit-scrollbar: Chrome and most phone browsers) stays on the screen all the time.
+   Firefox doesn't know it, so it gets the standard thin scrollbar. (The standard "scrollbar-width" can't be used
+   together with the styled one: it would switch the styled one off.) */
+.label-options::-webkit-scrollbar, .label-chips::-webkit-scrollbar { width: 8px; }
+.label-options::-webkit-scrollbar-track, .label-chips::-webkit-scrollbar-track {
+  background: var(--color-accent-100); border-radius: 999px;
+}
+.label-options::-webkit-scrollbar-thumb, .label-chips::-webkit-scrollbar-thumb {
+  background: var(--color-accent-700); border-radius: 999px;
+}
+@supports not selector(::-webkit-scrollbar) {
+  .label-options, .label-chips { scrollbar-width: thin; scrollbar-color: var(--color-accent-700) var(--color-accent-100); }
+}
+
+/* The scrollbars of the quick-view window, of the popup windows (add / edit) and of the notes boxes get the app's colours, the same
+   family as the label lists above: a light track and a rounded brown thumb, a bit slimmer than the track (the
+   transparent border + background-clip make the gap). On a computer the page's own scrollbar gets it too; on a
+   phone the page keeps its normal thin scrollbar. */
+.quickview-panel::-webkit-scrollbar, .meeting-dialog::-webkit-scrollbar, textarea.input::-webkit-scrollbar { width: 12px; }
+.quickview-panel::-webkit-scrollbar-track, .meeting-dialog::-webkit-scrollbar-track, textarea.input::-webkit-scrollbar-track {
+  background: transparent; margin: 14px 0;
+}
+.quickview-panel::-webkit-scrollbar-thumb, .meeting-dialog::-webkit-scrollbar-thumb, textarea.input::-webkit-scrollbar-thumb {
+  background: var(--color-accent-700); border: 3px solid transparent; background-clip: padding-box; border-radius: 999px;
+}
+.quickview-panel::-webkit-scrollbar-thumb:hover, .meeting-dialog::-webkit-scrollbar-thumb:hover, textarea.input::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-800); border: 3px solid transparent; background-clip: padding-box;
+}
+@media (hover: hover) {
+  html::-webkit-scrollbar { width: 14px; }
+  html::-webkit-scrollbar-track { background: var(--color-bg); }
+  html::-webkit-scrollbar-thumb {
+    background: var(--color-accent-700); border: 3px solid var(--color-bg); background-clip: padding-box; border-radius: 999px;
+  }
+  html::-webkit-scrollbar-thumb:hover { background: var(--color-accent-800); border: 3px solid var(--color-bg); background-clip: padding-box; }
+}
+/* Firefox doesn't know the styled scrollbars: it gets the standard thin one in the same colours */
+@supports not selector(::-webkit-scrollbar) {
+  .quickview-panel, .meeting-dialog, textarea.input { scrollbar-width: thin; scrollbar-color: var(--color-accent-700) transparent; }
+  html { scrollbar-color: var(--color-accent-700) var(--color-bg); }
+}
+
+/* Phone: the x buttons get a 44px tap area */
+@media (max-width: 600px) {
+  .quickview-close, .meeting-dialog-close { width: 44px; height: 44px; }
+  .quickview-close { top: -10px; margin: -10px -10px -34px auto; }   /* the window's padding is 18px here: 8px from the edge */
+}
+
+/* The page's own scrollbar on a PHONE (no mouse: hover: none) is brown too. A phone shows the page's scrollbar as a thin
+   bar that only appears while you scroll, and the browser does not let the styled ::-webkit-scrollbar above change it,
+   but the standard "scrollbar-color" it does use. (scrollbar-color is inherited by everything inside the page and would
+   switch off the styled scrollbars of the windows and lists, so those are set back to "auto" here.) Browsers without
+   the styled scrollbars (Firefox) have their own rules above. */
+@media (hover: none) {
+  @supports selector(::-webkit-scrollbar) {
+    html { scrollbar-color: var(--color-accent-700) transparent; }
+    .quickview-panel, .meeting-dialog, textarea.input, .label-options, .label-chips { scrollbar-color: auto; }
+  }
+}
+
+/* Phone: the two buttons at the end of a form page (Save and Cancel, on the Add a meeting, Edit Contact and Add a New Contact
+   pages) sit side by side, each taking half of the row, instead of one under the other. A little less padding, so the
+   words fit in half a narrow screen. */
+@media (max-width: 600px) {
+  .form-actions { flex-wrap: nowrap; }
+  .form-actions .btn { flex: 1 1 0; min-width: 0; padding-left: 12px; padding-right: 12px; justify-content: center; white-space: nowrap; }
+  .form-actions .btn svg { display: none; }   /* the small check mark: no room for it in half a narrow screen */
 }

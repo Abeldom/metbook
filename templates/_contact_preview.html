@@ -29,7 +29,7 @@
 {% if contact.notes %}
 <div class="qv-section">
     <div class="fact-label">Notes</div>
-    <p class="qv-notes">{{ contact.notes }}</p>
+    <p class="qv-notes notes-clamp">{{ contact.notes }}</p>
 </div>
 {% endif %}
 
@@ -37,10 +37,12 @@
 <div class="qv-section">
     {# Meetings come newest first, so the last one in the list is the first time you met #}
     <div class="fact-label">Meetings <span class="qv-first-met">(first met {{ meetings[-1].date|nice_date }})</span></div>
-    {# All the meetings, newest first. The list scrolls inside the window when it is long (see .qv-meetings in style.css) #}
+    {# The newest 10 meetings, then "Show more" / "Show less" (static/js/quick-view.js), the same as on the full page.
+       The others are in the list too, hidden by the class qv-extra. #}
+    {% set first_page = 10 %}
     <ul class="qv-meetings">
         {% for meeting in meetings %}
-        <li>
+        <li{% if loop.index > first_page %} class="qv-extra"{% endif %}>
             {# The top row: the date, and the labels right beside it (they wrap to the next line if there is no room) #}
             <span class="qv-meeting-head">
                 <span class="qv-meeting-date">{{ meeting.date|nice_date }}</span>
@@ -53,6 +55,14 @@
         </li>
         {% endfor %}
     </ul>
+    {% if meetings|length > first_page %}
+    <div class="qv-more-row">
+        <button type="button" class="btn btn-secondary" data-qv-more data-step="10" data-first="{{ first_page }}">
+            Show more <span class="qv-more-left">({{ meetings|length - first_page }} left)</span>
+        </button>
+        <button type="button" class="btn btn-secondary" data-qv-less hidden>Show less</button>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 

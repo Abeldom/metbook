@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="narrow" style="margin:0 auto">
-    <a class="back-link" href="{{ url_for('view_contact', contact_id=contact.id) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Back to {{ contact.name }}</a>
     <h1 class="page-title">Edit Contact</h1>
     <p class="lede" style="margin-bottom:24px">Change their name, picture, labels, or notes. Meetings are edited on the timeline.</p>
 
@@ -17,7 +16,9 @@
 
     {# request.form.get('name', contact.name): after a failed save, show what was typed;
        otherwise show what's saved in the database #}
-    <form class="card form-card" method="POST" enctype="multipart/form-data">
+    <form class="card form-card" method="POST" enctype="multipart/form-data" data-track-changes>
+        {# page=1: tells the server this form is from this page (not the popup window), so a mistake brings this page back #}
+        <input type="hidden" name="page" value="1">
         {# The photo first: a round picture (the current photo, or a +), with the buttons "Upload new photo",
            "Remove photo" (templates/_photo_picker.html, static/js/photo-picker.js).
            The small copy fills the round picture; a click on it shows the whole original. #}
@@ -36,7 +37,7 @@
         {# Notes right after the picture, then the labels (same order as "Add a New Contact") #}
         <div class="field">
             <label for="notes">Notes</label>
-            <textarea class="input" id="notes" name="notes">{{ request.form.get('notes', contact.notes or '') }}</textarea>
+            <textarea class="input" id="notes" name="notes" placeholder="e.g. Met at EgyetemistaIfi. Brother of Daniel. Lives in Cluj-Napoca. Likes driving.">{{ request.form.get('notes', contact.notes or '') }}</textarea>
         </div>
 
         {% include "_label_picker.html" %}
@@ -48,4 +49,5 @@
     </form>
 </div>
 <script type="module" src="{{ url_for('static', filename='js/photo-picker.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form-changes.js') }}"></script>
 {% endblock %}

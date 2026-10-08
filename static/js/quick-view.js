@@ -7,6 +7,8 @@
 // Without JavaScript the card is just a link to the full page, as before.
 // Ctrl / Shift / Cmd + click, or a middle click, still opens the full page (in a new tab).
 
+import { setUpNotes } from "./notes-clamp.js";   // long notes: 6 lines and a "Show more" button
+
 const grid = document.querySelector(".people-grid");
 
 let overlay = null;        // the dark layer with the window, made the first time it's needed
@@ -28,6 +30,40 @@ function build() {
   content = overlay.querySelector(".quickview-content");
 
   overlay.querySelector(".quickview-close").addEventListener("click", close);
+
+  // "Show more" / "Show less" under the meetings: the same idea as on the full page. The meetings beyond the
+  // first 10 are in the list but hidden (the class qv-extra); each press of "Show more" shows 10 more, "Show less"
+  // hides them again. (This one listener serves every person's window: the buttons are made fresh each time.)
+  content.addEventListener("click", (event) => {
+    const more = event.target.closest("[data-qv-more]");
+    const less = event.target.closest("[data-qv-less]");
+    if (!more && !less) {
+      return;
+    }
+    const row = event.target.closest(".qv-more-row");
+    const moreButton = row.querySelector("[data-qv-more]");
+    const lessButton = row.querySelector("[data-qv-less]");
+    const items = [...content.querySelectorAll(".qv-meetings li")];
+    const first = Number(moreButton.dataset.first);
+    const step = Number(moreButton.dataset.step);
+
+    if (more) {
+      for (const li of items.filter((li) => li.classList.contains("qv-extra")).slice(0, step)) {
+        li.classList.remove("qv-extra");
+      }
+    } else {
+      for (const li of items.slice(first)) {
+        li.classList.add("qv-extra");
+      }
+      // The list got much shorter: bring the "Meetings" caption back to the top of the window
+      content.querySelector(".qv-section .fact-label").scrollIntoView({ block: "start" });
+    }
+
+    const hidden = items.filter((li) => li.classList.contains("qv-extra")).length;
+    moreButton.hidden = hidden === 0;
+    moreButton.querySelector(".qv-more-left").textContent = `(${hidden} left)`;
+    lessButton.hidden = items.length - hidden <= first;
+  });
   // A click on the dark background (not on the window) closes it
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) {
@@ -68,6 +104,7 @@ async function open(card) {
     }
     if (current === id) {                               // you may have closed it or clicked another person
       content.innerHTML = cache.get(id);
+      setUpNotes(content);                              // the window is visible now, so the lines can be counted
     }
   } catch (error) {
     // Something went wrong (no connection, the person is gone): just open the full page

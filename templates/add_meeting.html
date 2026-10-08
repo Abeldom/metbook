@@ -1,0 +1,65 @@
+{# add_meeting.html - the "Add a meeting" form as a page of its own.
+   On a phone (a narrow screen) the "Add a meeting" button on a contact's page follows a link to this page;
+   on a computer the same form opens as a popup window (it is built into contact_detail.html).
+   The form is sent to the same route as the popup's (add_meeting_page). The hidden field "page" tells the
+   server that it came from this page, so after a mistake (a wrong date...) it shows this page again. #}
+{% extends "base.html" %}
+
+{% block title %}Add a meeting - {{ contact.name }} - Metbook{% endblock %}
+
+{% block content %}
+<div class="narrow" style="margin:0 auto">
+    <h1 class="page-title">Add a meeting</h1>
+    {# The name is in bold brown, so you can see it is a name (a contact may be called just "a") #}
+    <p class="lede" style="margin-bottom:24px">When did you meet <strong class="lede-name">{{ contact.name }}</strong>?</p>
+
+    {% if error %}
+    <div class="error" role="alert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <span><strong>Error:</strong> {{ error }}</span>
+    </div>
+    {% endif %}
+
+    {# enctype="multipart/form-data" is needed for a form that sends files.
+       data-track-changes: the Save button is pale until you put something in (static/js/form-changes.js). #}
+    <form class="card form-card" method="POST" enctype="multipart/form-data" data-track-changes data-require-filled
+          action="{{ url_for('add_meeting_page', contact_id=contact.id) }}">
+        <input type="hidden" name="page" value="1">
+
+        <div class="field">
+            <label for="meeting-date">Date *</label>
+            {# data-date-picker: static/js/date-picker.js adds a calendar button next to the box #}
+            <input class="input" type="text" id="meeting-date" name="date" placeholder="{{ date_example }}"
+                   value="{{ request.form.get('date', '') }}" required data-date-picker>
+            <span class="hint">{{ date_hint }}</span>
+        </div>
+
+        <div class="field">
+            <label for="meeting-notes">Notes</label>
+            <textarea class="input" id="meeting-notes" name="notes" placeholder="Where you met, what you talked about">{{ request.form.get('notes', '') }}</textarea>
+        </div>
+
+        {# Labels and photos are folded away under "Labels and photos", the same as in the popup window.
+           After a mistake it opens again if you had ticked or typed labels. #}
+        <details class="more-notes"{% if error and (request.form.getlist('labels') or request.form.get('new_labels')) %} open{% endif %}>
+            <summary>Labels and photos <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <div class="more-notes-body">
+                {% include "_label_picker.html" %}
+                <div class="field">
+                    <label for="meeting-photos">Photos</label>
+                    {# multiple: lets you choose several files at once #}
+                    <input class="input" type="file" id="meeting-photos" name="photos" accept="image/*" multiple>
+                    <span class="hint">You can choose several at once • PNG, JPG, GIF, or WebP</span>
+                </div>
+            </div>
+        </details>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Save meeting</button>
+            <a class="btn btn-secondary" href="{{ url_for('view_contact', contact_id=contact.id) }}">Cancel</a>
+        </div>
+    </form>
+</div>
+<script type="module" src="{{ url_for('static', filename='js/date-picker.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/form-changes.js') }}"></script>
+{% endblock %}

@@ -6,6 +6,8 @@
 // label, choose or remove a photo, pick a date) it is switched on and becomes the strong, filled button; if
 // you put everything back the way it was, it is switched off again. This also stops Enter from saving an
 // unchanged form.
+// A form with the attribute data-require-filled (the "Add a meeting" forms) goes one step further: its Save button
+// stays pale until every required field (the date) has something in it, even when other fields are filled in.
 // This is also used by the "add" forms (a new meeting, a new contact): their Save button is pale until you
 // have put something in. (If you then press it with a required field still empty, the "Missing: ..." note of
 // form-check.js appears.)
@@ -28,10 +30,14 @@ for (const form of document.querySelectorAll("form[data-track-changes]")) {
   }
   const afterMistake = form.closest("dialog[data-open-on-load]") !== null
     || form.parentElement.querySelector(":scope > .error") !== null;
+  const needsFilled = form.hasAttribute("data-require-filled");
+  const required = [...form.elements].filter((field) => field.required);
   const original = snapshot(form);
 
   function check() {
-    const unchanged = !afterMistake && snapshot(form) === original;
+    const changed = afterMistake || snapshot(form) !== original;
+    const filled = !needsFilled || required.every((field) => field.value.trim() !== "");
+    const unchanged = !(changed && filled);   // pale and switched off: nothing to save yet, or a required field is empty
     saveButton.classList.toggle("is-unchanged", unchanged);
     saveButton.disabled = unchanged;
   }

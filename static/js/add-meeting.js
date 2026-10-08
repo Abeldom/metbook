@@ -13,6 +13,11 @@
 // with what you typed. reset() would put THAT back, not an empty form. So we empty it by hand.
 // Without JavaScript the dialog is shown as a plain part of the page (see style.css).
 
+// On a phone (a narrow screen, the same limit as the phone styles in style.css) the buttons that would open a popup
+// window ("Add a meeting", "Edit contact") are left alone: they are links, and the browser opens the page of its own.
+// On a computer the same forms open as popup windows.
+const onPhone = () => window.matchMedia("(max-width: 600px)").matches;
+
 const dialog = document.querySelector("#add-meeting-dialog");
 const openButton = document.querySelector("[data-open-meeting]");
 const editDialog = document.querySelector("[data-edit-dialog][data-open-on-load]");   // only after a failed save, or a link used without JavaScript
@@ -62,7 +67,7 @@ document.addEventListener("click", (event) => {
 // reload either. Without JavaScript (or with Ctrl / Shift / Cmd + click) it is a normal link to the edit page.
 document.addEventListener("click", (event) => {
   const link = event.target.closest("[data-edit-contact]");
-  if (!link || event.button !== 0 || event.ctrlKey || event.shiftKey || event.metaKey || event.altKey) {
+  if (!link || onPhone() || event.button !== 0 || event.ctrlKey || event.shiftKey || event.metaKey || event.altKey) {
     return;
   }
   const box = document.getElementById("edit-contact-dialog");
@@ -107,7 +112,14 @@ if (dialog && openButton) {
     }
   }
 
-  openButton.addEventListener("click", open);
+  openButton.addEventListener("click", (event) => {
+    // A phone, or Ctrl / Shift / Cmd + click: follow the link to the page of its own
+    if (onPhone() || event.ctrlKey || event.shiftKey || event.metaKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    open();
+  });
   dialog.querySelector("[data-cancel-meeting]").addEventListener("click", () => {
     const form = dialog.querySelector("form");
 

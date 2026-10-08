@@ -601,9 +601,14 @@ def edit_contact_page(contact_id):
         name = request.form.get("name", "").strip()
         notes = request.form.get("notes", "").strip()
 
-        # A mistake: show the contact's page again, with the edit window open and the error in it
-        # (the window is built into contact_detail.html; edit_contact.html is only for no JavaScript)
+        # A mistake: show the form again with the error. A form from the edit page (it has the hidden field "page":
+        # used on a phone and without JavaScript) gets that page back; the popup window gets the contact's page with
+        # the window open and the error in it.
+        from_page = bool(request.form.get("page"))
         if not name:
+            if from_page:
+                return render_template("edit_contact.html", contact=contact, error="Name is required!",
+                                       **label_form_data())
             return show_contact_page(contact, edit_contact_error="Name is required!")
 
         # Picture: keep the current one, unless a new one was chosen
@@ -615,6 +620,9 @@ def edit_contact_page(contact_id):
         if picture_file and picture_file.filename:
             picture_path = save_upload_file(picture_file)
             if not picture_path:
+                if from_page:
+                    return render_template("edit_contact.html", contact=contact, error=IMAGE_ERROR,
+                                           **label_form_data())
                 return show_contact_page(contact, edit_contact_error=IMAGE_ERROR)
         elif request.form.get("remove_picture"):
             picture_path = None
@@ -704,6 +712,18 @@ def view_contact(contact_id):
     return show_contact_page(contact, editing_meeting_id=editing_meeting_id)
 
 
+@app.route("/contact/<int:contact_id>/meetings/new")
+def new_meeting_page(contact_id):
+    """
+    The "Add a meeting" form as a page of its own. On a computer the button opens the same form as a popup
+    window; on a phone (a narrow screen) the button just follows the link to this page.
+    """
+    contact = get_contact_by_id(contact_id)
+    if not contact:
+        return redirect(url_for("people"))
+    return render_template("add_meeting.html", contact=contact, **label_form_data())
+
+
 @app.route("/contact/<int:contact_id>/meetings", methods=["POST"])
 def add_meeting_page(contact_id):
     """
@@ -726,7 +746,10 @@ def add_meeting_page(contact_id):
         error = IMAGE_ERROR + " Choose the photos again."
 
     if error:
-        # Show the same page again, with the error and what the user typed
+        # Show the same page again, with the error and what the user typed. A form that came from the page of its
+        # own (it has the hidden field "page") gets that page back; the popup window gets the contact's page.
+        if request.form.get("page"):
+            return render_template("add_meeting.html", contact=contact, error=error, **label_form_data())
         return show_contact_page(contact, error=error)
 
     meeting_id = add_meeting(contact_id, date, notes)
@@ -819,6 +842,9 @@ if __name__ == "__main__":
         # it starts. This setting makes it read them again when they change, so a change in an HTML
         # file shows up with a refresh. (A change in app.py or database.py still needs a restart.)
         app.config["TEMPLATES_AUTO_RELOAD"] = True
+        # The template system was already created when this file was loaded (adding the filters above created it),
+        # so the setting above alone comes too late: it must be switched on in the template system itself too.
+        app.jinja_env.auto_reload = True
         address = find_lan_address()
         print()
         print("  PHONE MODE: Metbook can be opened from other devices on this Wi-Fi.")

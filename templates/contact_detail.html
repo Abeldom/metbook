@@ -37,7 +37,7 @@
             {# No box and no icon: the text sits straight on the card, under a small NOTES label #}
             <div class="fact">
                 <div class="fact-label">Notes</div>
-                <p class="fact-value">{{ contact.notes }}</p>
+                <p class="fact-value notes-clamp">{{ contact.notes }}</p>
             </div>
         </div>
         {% endif %}
@@ -81,7 +81,7 @@
 
             <div class="field">
                 <label for="edit-contact-notes">Notes</label>
-                <textarea class="input" id="edit-contact-notes" name="notes">{{ request.form.get('notes', contact.notes or '') if edit_contact_error else contact.notes or '' }}</textarea>
+                <textarea class="input" id="edit-contact-notes" name="notes" placeholder="e.g. Met at EgyetemistaIfi. Brother of Daniel. Lives in Cluj-Napoca. Likes driving.">{{ request.form.get('notes', contact.notes or '') if edit_contact_error else contact.notes or '' }}</textarea>
             </div>
 
             {% with ticked_label_ids = request.form.getlist('labels')|map('int')|list if edit_contact_error else contact.labels|map(attribute='id')|list,
@@ -101,7 +101,7 @@
         {# The title on the left, "Add a meeting" on the right, both centered on the same line #}
         <div class="timeline-head">
             <h2 id="timeline-title">Meetings</h2>
-            <button type="button" class="btn btn-primary add-meeting-open" data-open-meeting aria-controls="add-meeting-dialog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add a meeting</button>
+            <a class="btn btn-primary add-meeting-open" data-open-meeting aria-controls="add-meeting-dialog" href="{{ url_for('new_meeting_page', contact_id=contact.id) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add a meeting</a>
         </div>
 
         {# "Add a meeting" opens a popup window (a <dialog>, static/js/add-meeting.js). After a failed try the
@@ -121,7 +121,7 @@
             {% endif %}
 
             {# enctype="multipart/form-data" is needed for a form that sends files #}
-            <form class="meeting-form" method="POST" enctype="multipart/form-data" data-track-changes
+            <form class="meeting-form" method="POST" enctype="multipart/form-data" data-track-changes data-require-filled
                   action="{{ url_for('add_meeting_page', contact_id=contact.id) }}">
                 <div class="field">
                     <label for="meeting-date">Date *</label>
@@ -313,5 +313,6 @@
 <script type="module" src="{{ url_for('static', filename='js/photo-picker.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/form-changes.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/more-meetings.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/notes-clamp.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/add-meeting.js') }}"></script>
 {% endblock %}
