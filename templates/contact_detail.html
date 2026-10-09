@@ -14,7 +14,7 @@
                    (without JavaScript, the link just opens the original). #}
                 <a class="zoom" href="{{ url_for('get_upload', filename=contact.picture_path) }}" data-lightbox
                    aria-label="View the whole picture of {{ contact.name }}">
-                    <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}">
+                    <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}"{{ photo_style(contact) }}>
                 </a>
             {% else %}
                 <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
@@ -31,21 +31,26 @@
         </p>
         {% endif %}
 
-        {# The labels are only shown here (they are not links) #}
-        {% if contact.labels %}
-        <div class="detail-labels">
-            {% for label in contact.labels %}
-            <span class="tag {{ label.id|label_color }}">{{ label.name }}</span>
-            {% endfor %}
-        </div>
-        {% endif %}
-
         {% if contact.notes %}
         <div class="facts">
             {# No box and no icon: the text sits straight on the card, under a small NOTES label #}
             <div class="fact">
                 <div class="fact-label">Notes</div>
                 <p class="fact-value notes-clamp">{{ contact.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {# The labels sit under the notes (they are not links) #}
+        {% if contact.labels %}
+        <div class="facts">
+            <div class="fact">
+                <div class="fact-label">Labels</div>
+                <div class="detail-labels">
+                    {% for label in contact.labels %}
+                    <span class="tag {{ label.id|label_color }}">{{ label.name }}</span>
+                    {% endfor %}
+                </div>
             </div>
         </div>
         {% endif %}
@@ -77,7 +82,9 @@
               action="{{ url_for('edit_contact_page', contact_id=contact.id) }}">
             {% with current_name = contact.name,
                     current_thumb = url_for('get_thumb', filename=contact.picture_path) if contact.picture_path else '',
-                    current_full = url_for('get_upload', filename=contact.picture_path) if contact.picture_path else '' %}
+                    current_full = url_for('get_upload', filename=contact.picture_path) if contact.picture_path else '',
+                    current_x = contact.photo_x, current_y = contact.photo_y,
+                    current_tx = contact.thumb_x, current_ty = contact.thumb_y %}
                 {% include "_photo_picker.html" %}
             {% endwith %}
 

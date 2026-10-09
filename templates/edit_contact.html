@@ -24,7 +24,9 @@
            The small copy fills the round picture; a click on it shows the whole original. #}
         {% with current_name = contact.name,
                 current_thumb = url_for('get_thumb', filename=contact.picture_path) if contact.picture_path else '',
-                current_full = url_for('get_upload', filename=contact.picture_path) if contact.picture_path else '' %}
+                current_full = url_for('get_upload', filename=contact.picture_path) if contact.picture_path else '',
+                current_x = contact.photo_x, current_y = contact.photo_y,
+                current_tx = contact.thumb_x, current_ty = contact.thumb_y %}
             {% include "_photo_picker.html" %}
         {% endwith %}
 

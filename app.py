@@ -198,6 +198,21 @@ def nice_date(text):
 app.add_template_filter(simplify)
 
 
+@app.template_global()
+def photo_style(contact):
+    """
+    The style="..." attribute of a contact's picture (<img>): where the picture is pointed in its frames, if the person
+    chose that. --pos is for the big frames, --pos-small for the small round picture; the CSS uses them (and has its own
+    default look when they are missing). Returns "" when nothing was chosen.
+    """
+    parts = []
+    if contact.get("photo_x") is not None and contact.get("photo_y") is not None:
+        parts.append(f"--pos: {int(contact['photo_x'])}% {int(contact['photo_y'])}%")
+    if contact.get("thumb_x") is not None and contact.get("thumb_y") is not None:
+        parts.append(f"--pos-small: {int(contact['thumb_x'])}% {int(contact['thumb_y'])}%")
+    return Markup(f' style="{"; ".join(parts)}"') if parts else ""
+
+
 @app.template_filter("name_wrap")
 def name_wrap(name):
     """
@@ -216,7 +231,7 @@ PAGE_SIZE = 50
 # {code name: what the switch says}. Shown when nothing was chosen yet: only the name, with the
 # notes. (Labels and First met are off until you switch them on. Sorted by First met, the
 # dates are shown anyway: see forced_parts in people().)
-CARD_PARTS = {"name": "Name", "origin": "Originally from", "notes": "Notes", "firstmet": "First met", "labels": "Labels"}
+CARD_PARTS = {"name": "Name", "origin": "Originally from", "firstmet": "First met", "notes": "Notes", "labels": "Labels"}
 DEFAULT_CARD_PARTS = {"name", "origin", "notes"}
 
 # The two layouts of the People cards: {code name: what the button says}.
@@ -294,6 +309,24 @@ def place_fields():
     """
     return (request.form.get("lives_in", "").strip()[:100],
             request.form.get("origin", "").strip()[:100])
+
+
+def photo_position():
+    """
+    Where the picture is pointed in its frames, from the hidden fields of a contact form (percents, 0-100):
+    photo_x / photo_y for the big frames and thumb_x / thumb_y for the small round picture.
+    Returns (photo_x, photo_y, thumb_x, thumb_y). A pair that is empty, text or out of range is (None, None):
+    the default look.
+    """
+    def pair(first, second):
+        try:
+            x = int(request.form.get(first, ""))
+            y = int(request.form.get(second, ""))
+        except ValueError:
+            return None, None
+        return (x, y) if 0 <= x <= 100 and 0 <= y <= 100 else (None, None)
+
+    return pair("photo_x", "photo_y") + pair("thumb_x", "thumb_y")
 
 
 def label_form_data(current_ids=()):
@@ -526,16 +559,18 @@ def people():
     # we know in it) = the default, Name and Notes.
     # (Older cookies like "people_view_4" and "people_notes_now" are simply ignored now.)
     # A fresh visit (you opened the page yourself: see fresh_visit above) starts again from the default.
-    saved_view = "" if fresh_visit else request.cookies.get("people_show_2", "")
-    saved_parts = set(saved_view.split(".")) & set(CARD_PARTS)   # & keeps only names we know
-    if not saved_parts:
+    # None = nothing saved: the default. An empty saved choice is a real choice too: every switch off (only the name).
+    saved_view = None if fresh_visit else request.cookies.get("people_show_2")
+    if saved_view is None:
         saved_parts = set(DEFAULT_CARD_PARTS)
-    saved_parts.add("name")   # the name is always shown (its switch is locked on)
+    else:
+        saved_parts = set(saved_view.split(".")) & set(CARD_PARTS)   # & keeps only names we know
+    saved_parts.add("name")   # the name is always shown (it has no switch)
 
     # Sorted by "first met"? Then the dates are always shown, so you can see
     # why the cards are in this order. | joins two sets: saved_parts + firstmet.
     # (Only for this page: the saved choice itself doesn't change.)
-    forced_parts = {"name", "firstmet"} if sort_by == "firstmet" else {"name"}
+    forced_parts = {"firstmet"} if sort_by == "firstmet" else set()
     shown_parts = saved_parts | forced_parts
 
     # The layout of the cards: "compact" (a round picture at the left of the name) or "large"
@@ -600,7 +635,8 @@ def add_contact_page():
                     **label_form_data())
 
         # Add to database (with or without picture)
-        contact_id = add_contact(name, notes, picture_filename, lives_in, origin)
+        positions = photo_position() if picture_filename else (None,) * 4
+        contact_id = add_contact(name, notes, picture_filename, lives_in, origin, *positions)
 
         # The "date first met" becomes the first meeting on their timeline (no date: no meeting)
         if date_met:
@@ -677,7 +713,9 @@ def edit_contact_page(contact_id):
         elif request.form.get("remove_picture"):
             picture_path = None
 
-        update_contact(contact_id, name, notes, picture_path, *place_fields())
+        # The picture's position is kept only for the SAME picture: a new picture (or none) starts from the default
+        positions = photo_position() if picture_path and picture_path == old_picture else (None,) * 4
+        update_contact(contact_id, name, notes, picture_path, *place_fields(), *positions)
         set_contact_labels(contact_id, ticked_label_ids(),
                            parse_label_names(request.form.get("new_labels", "")))
 

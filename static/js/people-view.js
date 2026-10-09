@@ -38,32 +38,11 @@ for (const radio of document.querySelectorAll('input[name="layout"]')) {
   });
 }
 
-// At least one thing must always be shown: the last ticked switch can't be switched off.
-// It gets a little hint (title) so you can see why it doesn't react.
-function markLastOne() {
-  const on = [...switches].filter((box) => box.checked);
-  for (const box of switches) {
-    const isLast = on.length === 1 && box === on[0] && !box.disabled;
-    box.parentElement.classList.toggle("view-option-last", isLast);
-    if (isLast) {
-      box.parentElement.title = "At least one has to be shown";
-    } else if (!box.disabled) {
-      box.parentElement.removeAttribute("title");
-    }
-  }
-}
-markLastOne();
-
 for (const box of switches) {
   box.addEventListener("change", () => {
-    if (![...switches].some((other) => other.checked)) {
-      box.checked = true;   // that was the last one: put it back
-      return;
-    }
     // classList.toggle(name, on): add the class when "on" is true, remove it when false
     grid.classList.toggle(`hide-${box.value}`, !box.checked);
     saveChoice();
-    markLastOne();
   });
 }
 

@@ -194,18 +194,19 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 /* A compact card: the round picture at the left, the text (.person-body) at its right.
    A row of cards is stretched to the same height (the grid's default), so the rows stay even. */
 .person {
-  display: flex; align-items: center; gap: 12px; text-align: left; min-height: 68px;
+  display: flex; align-items: center; gap: 12px; text-align: left; min-height: 84px;
   padding: 8px 14px 8px 8px; border-radius: 22px;
   background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-sm);
   transition: box-shadow .18s, transform .18s;
 }
 /* The round picture: the photo, or (without one) the calm green circle with the person icon */
 .person-photo {
-  width: 52px; height: 52px; flex: none; border-radius: 50%; overflow: hidden;
+  width: 68px; height: 68px; flex: none; border-radius: 50%; overflow: hidden;
   background: var(--color-accent-2-200); color: var(--color-accent-2-800);   /* one calm green for everyone */
   display: flex; align-items: center; justify-content: center;
 }
 .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+.person-photo svg { width: 30px; height: 30px; }   /* the person icon of someone without a picture */
 /* min-width: 0 lets the text shrink, so a long name wraps instead of widening the card */
 .person-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .person-notes {
@@ -239,9 +240,9 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
    are equally strong, the later one wins.) */
 @media (max-width: 600px) {
   .people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .person { gap: 8px; min-height: 56px; padding: 6px 10px 6px 6px; border-radius: 18px; }
-  .person-photo { width: 40px; height: 40px; }
-  .person-photo svg { width: 20px; height: 20px; }
+  .person { gap: 8px; min-height: 62px; padding: 6px 10px 6px 6px; border-radius: 18px; }
+  .person-photo { width: 48px; height: 48px; }
+  .person-photo svg { width: 24px; height: 24px; }
   .person-name { font-size: 13.5px; }
   .person-notes { font-size: 11.5px; }
   .person-date { font-size: 11px; }
@@ -258,8 +259,8 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
   grid-template-columns: repeat(auto-fill, minmax(max(200px, calc((100% - 40px) / 3)), 1fr));
 }
 .layout-large .person {
-  flex-direction: column; align-items: stretch; gap: 6px; text-align: center; min-height: 0;
-  padding: 10px 10px 16px; border-radius: calc(var(--radius-lg) * 1.15);
+  flex-direction: column; align-items: stretch; gap: 6px; text-align: left; min-height: 0;
+  padding: 10px 10px 12px; border-radius: calc(var(--radius-lg) * 1.15);
 }
 .layout-large .person-photo {
   width: auto; height: auto; aspect-ratio: 4 / 3; border-radius: var(--radius-lg); margin-bottom: 8px;
@@ -267,10 +268,10 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .layout-large .person-photo svg { width: 44px; height: 44px; }
 .layout-large .person-body { flex: none; padding: 0 6px; }
 .layout-large .person-name { font-size: 18px; line-height: 1.15; }
-.layout-large .person-notes { font-size: 13.5px; line-height: 1.45; margin-top: 2px; text-wrap: balance; }   /* centered lines of nearly equal length */
+.layout-large .person-notes { font-size: 13.5px; line-height: 1.45; margin-top: 2px; text-wrap: pretty; }   /* left-aligned: no single word alone on the last line */
 .layout-large .person-date { font-size: 12.5px; }
 .layout-large .person-place { font-size: 12.5px; }
-.layout-large .person-labels { justify-content: safe center; }
+.layout-large .person-labels { justify-content: flex-start; }
 .layout-options { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 600px) {
   /* large cards on a phone: 2 per row, a little smaller */
@@ -475,7 +476,7 @@ input[type="file"]::file-selector-button {
 }
 /* Only when even a single label is too long for the card may it shrink ("Very long lab…") */
 .person-labels.squeeze .tag:first-child { flex-shrink: 1; min-width: 0; }
-.detail-labels { justify-content: center; }
+.detail-labels { justify-content: flex-start; margin-top: 4px; }   /* under the notes, at the left like the notes text */
 .detail-labels .tag { font-size: 13px; padding: 4px 12px; }
 
 /* The picker on the add/edit forms. A <fieldset> groups the checkboxes;
@@ -831,6 +832,7 @@ body.lightbox-open { overflow: hidden; }
   position: fixed; inset: 0; z-index: 90; padding: 16px;
   display: flex; align-items: center; justify-content: center;
   background: rgba(24, 14, 8, .55);
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);   /* the list behind is soft, so the window stands out */
 }
 .quickview[hidden] { display: none; }
 body.quickview-open { overflow: hidden; }
@@ -867,7 +869,8 @@ body.quickview-open { overflow: hidden; }
 .qv-labels, .qv-meeting-labels { display: flex; flex-wrap: wrap; gap: 4px; }
 /* "(first met 2012)" beside the MEETINGS caption: normal letters, lighter, not capitals */
 .qv-first-met { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--color-neutral-700); }
-.qv-labels { margin-top: 8px; }   /* in the title block, under the name and "First met" */
+.qv-labels { margin-top: 4px; }   /* under the LABELS caption */
+.qv-labels-caption { margin-top: 8px; }   /* space between the notes and the LABELS caption */
 .qv-section { margin-top: 16px; }
 /* A thin line (and more room) between two parts of the window, e.g. the notes and the meetings, so they don't run
    together. (The first part has no line above it: it only applies to a part that follows another one.) */
@@ -1044,8 +1047,6 @@ body.quickview-open { overflow: hidden; }
 .detail-places strong, .qv-places strong { font-weight: 600; color: var(--color-text); }
 .qv-places { justify-content: flex-start; margin-top: 2px; font-size: 13px; }
 
-/* The last ticked "Show" switch cannot be switched off */
-.view-option-last { cursor: not-allowed; }
 
 /* "What filters the list right now": small pills under the search bar. Each one is a link that removes that filter. */
 .active-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
@@ -1058,3 +1059,91 @@ body.quickview-open { overflow: hidden; }
 .active-filter strong { font-weight: 600; }
 .active-filter:hover { background: var(--color-neutral-100); }
 .active-filter:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* The active-filters row is only needed while the Filter panel is closed: open, the panel shows the ticked pills itself */
+body:has(#panel-filter.is-open) .active-filters { display: none; }
+
+/* The quick-view window: the picture is big, on top, like in the "Large" layout (4:3), and the name is under it. The height
+   is capped (max-height) so the name and the buttons still fit on a screen. A person without a picture gets the same
+   look, with the avatar figure big in the middle of the green block. */
+.qv-head { flex-direction: column; align-items: stretch; gap: 12px; padding-right: 0; text-align: center; }
+.qv-head .qv-photo {
+  width: 100%; height: auto; aspect-ratio: 4 / 3; max-height: 280px; border-radius: var(--radius-lg);
+}
+.qv-head .qv-places, .qv-head .qv-labels { justify-content: center; }
+@media (max-width: 600px) {
+  .qv-head .qv-photo { width: 100%; height: auto; max-height: 220px; }
+}
+
+/* A wide screen (a computer): the page is wider, and everything is 20% larger. "zoom" scales text, buttons, spacing and
+   pictures together, like zooming the browser. A phone and a narrow window are not touched. */
+@media (min-width: 1000px) {
+  html { zoom: 1.2; }
+  .site-header, main { max-width: 1155px; }
+  /* Heights in "vh" are NOT shrunk by the zoom, so a window that is 100vh tall would be 20% taller than the screen (its
+     top cut off). Dividing by the zoom (1.2) makes them fit again. */
+  body { min-height: calc(100vh / 1.2); }
+  .meeting-dialog { max-height: calc(100dvh / 1.2 - 24px); }
+  .quickview-panel { max-height: min(calc(86vh / 1.2), 720px); }
+  .lightbox-picture { max-width: calc(94vw / 1.2); max-height: calc(88vh / 1.2); }
+}
+
+/* The one-line "from Lápos · met 2012" of a card, in both layouts, instead of the two separate lines (the place under the
+   name, and "First met" at the bottom). The Show switches still work: each one hides its own part of the line. */
+.person-line { display: block; font-size: 12px; color: var(--color-neutral-700); overflow-wrap: anywhere; }
+.person-line strong { font-weight: 600; color: var(--color-text); }
+.person-line .pl-date { font-style: italic; }
+.person-place, .person-date { display: none; }
+.layout-large .person-line { font-size: 12.5px; }
+.people-grid.hide-origin .pl-place, .people-grid.hide-firstmet .pl-date,
+.people-grid.hide-origin .pl-sep, .people-grid.hide-firstmet .pl-sep { display: none; }
+.people-grid.hide-origin.hide-firstmet .person-line { display: none; }
+@media (max-width: 600px) {
+  .person-line { font-size: 11px; }
+  .layout-large .person-line { font-size: 12px; }
+}
+
+/* A contact's page: less empty space between the places line and the NOTES, and between the notes and the LABELS
+   (the card's own gap is 16px between its parts, and each part has some padding too) */
+.detail-places + .facts { margin-top: -6px; }
+.facts + .facts { margin-top: -10px; }
+
+/* The quick-view window: the NOTES (or whatever comes first) sit closer to the name and places */
+.qv-head + .qv-section { margin-top: 16px; }   /* straight under the name */
+.qv-head:has(.qv-places) + .qv-section { margin-top: 8px; }   /* under the places line, which is already a small line under the name */
+
+.qv-photo svg { width: 72px; height: 72px; }   /* the avatar figure of a person without a picture */
+
+/* A person WITHOUT a picture: the same look, but the green block is much smaller (there is no photo to show) */
+.qv-photo:not(:has(.zoom)) { aspect-ratio: auto; height: 130px; }
+.qv-photo:not(:has(.zoom)) svg { width: 56px; height: 56px; }
+@media (max-width: 600px) {
+  .qv-head .qv-photo:not(:has(.zoom)) { height: 100px; }
+}
+
+/* Pictures cut into a frame (cards, a contact's page, the quick-view window): a tall (portrait) picture is cut at the bottom
+   more than at the top, because the face is usually in the upper part. (A wide picture is not affected: only its sides are cut.) */
+/* --pos is set on a picture by its contact's own choice ("What shows in the frame" in the edit form); without it: the default */
+.person-photo img, .avatar img, .qv-photo img, .photo-position-frame img { object-position: var(--pos, 50% 20%); }
+/* The small round picture (the compact cards, the round picture in the forms) has its own position, --pos-small */
+.person-photo img, .photo-picker-circle img, .photo-position-round img { object-position: var(--pos-small, 50% 20%); }
+.layout-large .person-photo img { object-position: var(--pos, 50% 20%); }   /* the large cards use the big frame's position */
+
+/* "What shows in the frame": the picture in a 4:3 frame (the shape of the big frames) that you drag with a finger or the mouse */
+.photo-picker { flex-wrap: wrap; }
+.photo-position { flex: 1 0 100%; margin-top: 4px; }
+.photo-position-body { display: grid; gap: 6px; margin-top: 12px; }
+.photo-position-frames { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
+.photo-position-item { display: grid; gap: 4px; justify-items: start; }
+.photo-position[hidden] { display: none; }
+.photo-position-frame {
+  width: min(100%, 240px); aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-lg);
+  background: var(--color-accent-2-200); cursor: grab; touch-action: none; user-select: none;
+}
+.photo-position-frame:active { cursor: grabbing; }
+.photo-position-frame:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.photo-position-frame img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.photo-position-frame.photo-position-round { width: 112px; aspect-ratio: 1; border-radius: 50%; }   /* the small round one, after the rule above */
+
+/* The labels are the LAST row of a card (after the notes and the date), in both layouts */
+.person-labels { order: 1; }

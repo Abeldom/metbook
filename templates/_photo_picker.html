@@ -34,4 +34,37 @@
         <input class="input" type="file" id="picture" name="picture" accept="image/*">
         {% if current_thumb %}<input type="checkbox" name="remove_picture" value="1" hidden>{% endif %}
     </div>
+    {# Where the picture is pointed in its frames. You drag the picture inside the two frames below
+       (static/js/photo-picker.js), which writes the numbers (percents) into these hidden fields:
+       photo_x/photo_y for the big frames, thumb_x/thumb_y for the small round picture. #}
+    <input type="hidden" name="photo_x" value="{{ current_x if current_x is not none else '' }}">
+    <input type="hidden" name="photo_y" value="{{ current_y if current_y is not none else '' }}">
+    <input type="hidden" name="thumb_x" value="{{ current_tx if current_tx is not none else '' }}">
+    <input type="hidden" name="thumb_y" value="{{ current_ty if current_ty is not none else '' }}">
+    {# Folded away (a <details>, like "Labels and photos"): it only opens when you want to move the picture.
+       The script shows it only when there is a picture. #}
+    <details class="more-notes photo-position" data-photo-position hidden>
+        <summary>Adjust the picture <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="photo-position-body">
+        <div class="photo-position-frames">
+            <div class="photo-position-item">
+                <div class="photo-position-frame" data-photo-frame="big" tabindex="0" role="group"
+                     data-current-x="{{ current_x if current_x is not none else '' }}" data-current-y="{{ current_y if current_y is not none else '' }}"
+                     aria-label="Large frame: drag the picture, or use the arrow keys">
+                    <img alt="" draggable="false">
+                </div>
+                <span class="hint">Large</span>
+            </div>
+            <div class="photo-position-item">
+                <div class="photo-position-frame photo-position-round" data-photo-frame="small" tabindex="0" role="group"
+                     data-current-x="{{ current_tx if current_tx is not none else '' }}" data-current-y="{{ current_ty if current_ty is not none else '' }}"
+                     aria-label="Small round picture: drag the picture, or use the arrow keys">
+                    <img alt="" draggable="false">
+                </div>
+                <span class="hint">Small</span>
+            </div>
+        </div>
+        <span class="hint">Drag each picture to choose the part that shows.</span>
+        </div>
+    </details>
 </div>

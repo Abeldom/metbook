@@ -58,7 +58,8 @@ function withParam(address, name, value) {
 
 // The places to search in, e.g. ["name", "notes"]: the ticked "Search in:" switches
 function chosenScopes() {
-  return scopeBoxes.filter((box) => box.checked).map((box) => box.value);
+  // Names are always searched: they have no switch
+  return ["name"].concat(scopeBoxes.filter((box) => box.checked).map((box) => box.value));
 }
 
 // The places the SEARCH looks in: the ticked ones, plus the extra ones when "Everywhere" is on
@@ -127,15 +128,9 @@ input.addEventListener("input", () => {
 });
 
 // Switching a "Search in:" place on or off searches again at once.
-// "Names" is always on: it is locked, you can't switch it off (a person is always found by the name).
+// Names have no switch: they are always searched (a person is always found by the name).
 function saveScopes() {
   const on = chosenScopes();
-  for (const box of scopeBoxes) {
-    box.disabled = box.value === "name";
-    if (box.value === "name") {
-      box.parentElement.title = "Names are always searched";
-    }
-  }
   // Remember the choice in a cookie ("name.notes"), so the page opens like this next time
   // (The "_2": the older cookie "search_in" held the old default and is ignored.)
   document.cookie = `search_in_2=${on.join(".")}; path=/; max-age=31536000; SameSite=Lax`;
@@ -150,10 +145,10 @@ function syncEverywhere() {
 
 if (everywhereBox) {
   everywhereBox.addEventListener("change", () => {
-    // Ticking it ticks every place; un-ticking it goes back to the first one only (Names), because at least one must stay on
-    scopeBoxes.forEach((box, index) => {
-      box.checked = everywhereBox.checked || index === 0;
-    });
+    // Ticking it ticks every place; un-ticking it un-ticks them all (the names are searched anyway)
+    for (const box of scopeBoxes) {
+      box.checked = everywhereBox.checked;
+    }
     saveScopes();
     limit = pageSize;
     update();
@@ -167,13 +162,6 @@ for (const box of scopeBoxes) {
     limit = pageSize;
     update();
   });
-}
-// Names are locked on. A locked (disabled) checkbox isn't sent with a form: the "submit" below unlocks them first.
-for (const box of scopeBoxes) {
-  box.disabled = box.value === "name";
-  if (box.value === "name") {
-    box.parentElement.title = "Names are always searched";
-  }
 }
 // Save what the page shows right now, too: after a fresh visit (see app.py) the page starts from the default,
 // and the saved choice must follow, or the next page of the site would bring the old choice back.

@@ -9,7 +9,7 @@
         {# Click: the whole original opens on a dark background (static/js/lightbox.js) #}
         <a class="zoom" href="{{ url_for('get_upload', filename=contact.picture_path) }}" data-lightbox
            aria-label="View the whole picture of {{ contact.name }}">
-            <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}">
+            <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}"{{ photo_style(contact) }}>
         </a>
         {% else %}
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
@@ -24,12 +24,6 @@
             {% if contact.origin %}<span>Originally from <strong>{{ contact.origin }}</strong></span>{% endif %}
         </p>
         {% endif %}
-        {# The labels sit under the name, beside the picture, where there is room #}
-        {% if contact.labels %}
-        <div class="qv-labels">
-            {% for label in contact.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}
-        </div>
-        {% endif %}
     </div>
 </div>
 
@@ -37,6 +31,14 @@
 <div class="qv-section">
     <div class="fact-label">Notes</div>
     <p class="qv-notes notes-clamp">{{ contact.notes }}</p>
+    {# The labels sit right under the notes #}
+    {% if contact.labels %}<div class="fact-label qv-labels-caption">Labels</div><div class="qv-labels">{% for label in contact.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}</div>{% endif %}
+</div>
+{% elif contact.labels %}
+{# No notes: the labels are a section of their own #}
+<div class="qv-section">
+    <div class="fact-label">Labels</div>
+    <div class="qv-labels">{% for label in contact.labels %}<span class="tag {{ label.id|label_color }}">{{ label.name }}</span>{% endfor %}</div>
 </div>
 {% endif %}
 

@@ -145,12 +145,20 @@ def init_database():
             cursor.execute(f"ALTER TABLE contacts ADD COLUMN {column} TEXT")
             print(f"✓ Added the '{column}' column to the contacts table")
 
+    # Migration: where the picture is "pointed" when it is cut into a frame, in percents, 0-100 (left-right, top-bottom).
+    # photo_x / photo_y: the big frames (the popup, the large cards, the contact's page); thumb_x / thumb_y: the small
+    # round picture (the compact cards). Empty = the default look.
+    for column in ("photo_x", "photo_y", "thumb_x", "thumb_y"):
+        if column not in columns:
+            cursor.execute(f"ALTER TABLE contacts ADD COLUMN {column} INTEGER")
+            print(f"✓ Added the '{column}' column to the contacts table")
+
     conn.commit()
     conn.close()
     print("✓ Database initialized (contacts, meetings, photos and labels tables ready)")
 
 
-def add_contact(name, notes="", picture_path="", lives_in="", origin=""):
+def add_contact(name, notes="", picture_path="", lives_in="", origin="", photo_x=None, photo_y=None, thumb_x=None, thumb_y=None):
     """
     Add a new contact to the database.
 
@@ -160,6 +168,8 @@ def add_contact(name, notes="", picture_path="", lives_in="", origin=""):
         picture_path (str): Filename of the picture (optional)
         lives_in (str): Where they live, e.g. a city (optional)
         origin (str): Where they come from, e.g. their home town (optional)
+        photo_x, photo_y (int): Where the picture is pointed in the big frames, in percent (None = the default)
+        thumb_x, thumb_y (int): The same for the small round picture
 
     Returns:
         int: The ID of the new contact
@@ -169,9 +179,9 @@ def add_contact(name, notes="", picture_path="", lives_in="", origin=""):
 
     # INSERT adds a new row to the table
     cursor.execute("""
-        INSERT INTO contacts (name, notes, picture_path, lives_in, origin)
-        VALUES (?, ?, ?, ?, ?)
-    """, (name, notes, picture_path, lives_in, origin))
+        INSERT INTO contacts (name, notes, picture_path, lives_in, origin, photo_x, photo_y, thumb_x, thumb_y)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, notes, picture_path, lives_in, origin, photo_x, photo_y, thumb_x, thumb_y))
 
     contact_id = cursor.lastrowid  # get the ID of what we just added
 
@@ -415,7 +425,8 @@ def get_contact_by_id(contact_id):
     return contact
 
 
-def update_contact(contact_id, name, notes, picture_path, lives_in="", origin=""):
+def update_contact(contact_id, name, notes, picture_path, lives_in="", origin="", photo_x=None, photo_y=None,
+                   thumb_x=None, thumb_y=None):
     """
     Change a contact's name, notes, picture and places.
 
@@ -426,6 +437,8 @@ def update_contact(contact_id, name, notes, picture_path, lives_in="", origin=""
         picture_path (str): New picture filename, or None for no picture
         lives_in (str): Where they live (empty = not given)
         origin (str): Where they come from (empty = not given)
+        photo_x, photo_y (int): Where the picture is pointed in the big frames, in percent (None = the default)
+        thumb_x, thumb_y (int): The same for the small round picture
 
     Returns:
         bool: True if changed, False if not found
@@ -437,9 +450,10 @@ def update_contact(contact_id, name, notes, picture_path, lives_in="", origin=""
     # The WHERE part is important: without it, EVERY contact would be changed!
     cursor.execute("""
         UPDATE contacts
-        SET name = ?, notes = ?, picture_path = ?, lives_in = ?, origin = ?
+        SET name = ?, notes = ?, picture_path = ?, lives_in = ?, origin = ?, photo_x = ?, photo_y = ?,
+            thumb_x = ?, thumb_y = ?
         WHERE id = ?
-    """, (name, notes, picture_path, lives_in, origin, contact_id))
+    """, (name, notes, picture_path, lives_in, origin, photo_x, photo_y, thumb_x, thumb_y, contact_id))
 
     rows_changed = cursor.rowcount
     conn.commit()

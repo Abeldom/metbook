@@ -27,6 +27,30 @@ if (root) {
   const chooseButton = actions.querySelector("[data-photo-choose]");
   const removeButton = actions.querySelector("[data-photo-remove]");
 
+  // "What shows in the frame": the picture in two frames that you drag, one for the BIG frames (4:3: the popup, the
+  // large cards, a contact's page) and one for the SMALL ROUND picture (the compact cards). Each one keeps two percents
+  // (0-100): where the picture is pointed. null = the default look (the CSS says 50% 20%).
+  const position = root.querySelector("[data-photo-position]");
+  const circleImage = circle.querySelector("img");
+
+  function makeAdjuster(frame, kind, cssName) {
+    const image = frame.querySelector("img");
+    const xField = root.querySelector(`input[name="${kind}_x"]`);
+    const yField = root.querySelector(`input[name="${kind}_y"]`);
+    const number = (text) => (text === "" || text === undefined ? null : Number(text));
+    return {
+      frame, image, xField, yField, cssName,
+      savedX: number(frame.dataset.currentX),     // what is saved for this contact
+      savedY: number(frame.dataset.currentY),
+      x: number(frame.dataset.currentX),
+      y: number(frame.dataset.currentY),
+    };
+  }
+  const adjusters = [
+    makeAdjuster(root.querySelector('[data-photo-frame="big"]'), "photo", "--pos"),
+    makeAdjuster(root.querySelector('[data-photo-frame="small"]'), "thumb", "--pos-small"),
+  ];
+
   const currentSrc = root.dataset.currentSrc;       // the small copy of the current picture, or ""
   const currentFull = root.dataset.currentFull;     // the original of the current picture, or ""
   let newUrl = null;                                 // a temporary address for the chosen file
@@ -46,6 +70,27 @@ if (root) {
     return currentSrc && !removed ? currentFull || currentSrc : "";
   }
 
+  // Show the picture in the frames the way the positions say, and write them into the hidden fields of the form
+  function applyPosition() {
+    for (const adjuster of adjusters) {
+      // The round picture of this form (the circle at the top) shows the small picture's position too
+      const targets = adjuster.cssName === "--pos-small" ? [adjuster.image, circleImage] : [adjuster.image];
+      if (adjuster.x === null || adjuster.y === null) {
+        for (const target of targets) {
+          target.style.removeProperty(adjuster.cssName);
+        }
+        adjuster.xField.value = "";
+        adjuster.yField.value = "";
+      } else {
+        for (const target of targets) {
+          target.style.setProperty(adjuster.cssName, `${adjuster.x}% ${adjuster.y}%`);
+        }
+        adjuster.xField.value = String(adjuster.x);
+        adjuster.yField.value = String(adjuster.y);
+      }
+    }
+  }
+
   function render() {
     const hasNew = input.files.length > 0;
     const removed = Boolean(removeBox && removeBox.checked);
@@ -63,6 +108,15 @@ if (root) {
     circle.title = shown ? "Click to see it full size" : "Choose a photo";
     circle.classList.toggle("has-picture", Boolean(shown));
 
+    // The frame to drag the picture in (only with a picture). A different picture than before: the default look.
+    position.hidden = !shown;
+    for (const adjuster of adjusters) {
+      if (shown && adjuster.image.getAttribute("src") !== shown) {
+        adjuster.image.src = shown;
+      }
+    }
+    applyPosition();
+
     // The buttons
     chooseButton.textContent = hasNew || hasCurrent ? "Upload new photo" : "Upload a photo";
     removeButton.hidden = !(hasNew || hasCurrent || removed);
@@ -77,6 +131,11 @@ if (root) {
   function setFile(file) {
     if (newUrl) {
       URL.revokeObjectURL(newUrl);
+    }
+    // A new picture has no position yet (the default look); with no new picture the saved position is back
+    for (const adjuster of adjusters) {
+      adjuster.x = file ? null : adjuster.savedX;
+      adjuster.y = file ? null : adjuster.savedY;
     }
     if (file) {
       const files = new DataTransfer();
@@ -122,6 +181,76 @@ if (root) {
       render();
     }
   });
+
+  // Dragging the picture inside a frame. The picture fills the frame (object-fit: cover), so it can only move along
+  // ONE direction: a tall picture up and down, a wide one left and right. Dragging by some pixels moves
+  // the point of view by that many pixels: pixels -> percent of the part that sticks out of the frame.
+  const DEFAULT_X = 50;
+  const DEFAULT_Y = 20;
+
+  function clamp(value) {
+    return Math.min(100, Math.max(0, Math.round(value)));
+  }
+
+  function setupDragging(adjuster) {
+    const { frame, image } = adjuster;
+
+    // How many pixels the picture sticks out of the frame (sideways, up and down)
+    function overflow() {
+      const naturalWidth = image.naturalWidth;
+      const naturalHeight = image.naturalHeight;
+      if (!naturalWidth || !naturalHeight) {
+        return { x: 0, y: 0 };
+      }
+      const box = frame.getBoundingClientRect();
+      const scale = Math.max(box.width / naturalWidth, box.height / naturalHeight);
+      return { x: naturalWidth * scale - box.width, y: naturalHeight * scale - box.height };
+    }
+
+    function moveBy(dx, dy) {
+      const out = overflow();
+      if (out.x < 1 && out.y < 1) {
+        return;
+      }
+      const x = adjuster.x === null ? DEFAULT_X : adjuster.x;
+      const y = adjuster.y === null ? DEFAULT_Y : adjuster.y;
+      // Dragging the picture to the right shows more of its LEFT part: the point of view goes down in number
+      adjuster.x = out.x >= 1 ? clamp(x - (dx / out.x) * 100) : x;
+      adjuster.y = out.y >= 1 ? clamp(y - (dy / out.y) * 100) : y;
+      applyPosition();
+      root.closest("form").dispatchEvent(new Event("photochange"));
+    }
+
+    let dragFrom = null;
+    frame.addEventListener("pointerdown", (event) => {
+      dragFrom = { x: event.clientX, y: event.clientY };
+      frame.setPointerCapture(event.pointerId);
+    });
+    frame.addEventListener("pointermove", (event) => {
+      if (!dragFrom) {
+        return;
+      }
+      moveBy(event.clientX - dragFrom.x, event.clientY - dragFrom.y);
+      dragFrom = { x: event.clientX, y: event.clientY };
+    });
+    for (const end of ["pointerup", "pointercancel"]) {
+      frame.addEventListener(end, () => {
+        dragFrom = null;
+      });
+    }
+    // The same with the keyboard (arrow keys, 5% each time), so it works without a mouse too
+    frame.addEventListener("keydown", (event) => {
+      const steps = { ArrowLeft: [5, 0], ArrowRight: [-5, 0], ArrowUp: [0, 5], ArrowDown: [0, -5] };
+      const step = steps[event.key];
+      if (!step) {
+        return;
+      }
+      event.preventDefault();
+      const out = overflow();
+      moveBy((step[0] / 100) * out.x, (step[1] / 100) * out.y);
+    });
+  }
+  adjusters.forEach(setupDragging);
 
   // File endings for the picture types a clipboard can hold
   const EXTENSIONS = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };

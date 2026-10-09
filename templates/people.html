@@ -48,6 +48,30 @@
         <input type="hidden" name="sort" value="{{ current_sort }}">
     </form>
 
+    {# Two buttons under the search bar, each opening its own panel below:
+         "Filter" = which people do I get?  -> Search in, Filter by label
+         "View"   = how do I see them?      -> Sort by, Show, Layout
+       Each panel starts open when something in it is set (Filter: a label chosen, or not
+       searching names only; View: sorted by First met), so you can see why the list looks like
+       it does. static/js/advanced-search.js opens and closes the panels when you tap the buttons,
+       and remembers what you opened or closed yourself. Without JavaScript both panels simply
+       stay open. (is-open is the class that means "open", aria-expanded tells screen readers.) #}
+    {% set filter_open = label_ids or lives_values or origin_values or search_scopes_changed %}
+    {# Only ONE panel is open at a time: when both would open, Filter wins (it decides who is in the list) #}
+    {% set view_open = current_sort != 'name' and not filter_open %}
+    <div class="search-menus">
+        <button type="button" class="advanced-toggle" data-menu="filter" aria-controls="panel-filter" aria-expanded="{{ 'true' if filter_open else 'false' }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
+            Filter
+            <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <button type="button" class="advanced-toggle" data-menu="view" aria-controls="panel-view" aria-expanded="{{ 'true' if view_open else 'false' }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+            View
+            <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+    </div>
+
     {# What is filtering the list right now (labels and places), one small pill each. The cross is a link to this same
        page without that one thing, so one tap removes it. Nothing is shown when nothing is filtered. The search text
        has its own cross inside the search box. The pieces are made first (a list of (title, text, address)), so the
@@ -76,30 +100,6 @@
     </div>
     {% endif %}
 
-    {# Two buttons under the search bar, each opening its own panel below:
-         "Filter" = which people do I get?  -> Search in, Filter by label
-         "View"   = how do I see them?      -> Sort by, Show, Layout
-       Each panel starts open when something in it is set (Filter: a label chosen, or not
-       searching names only; View: sorted by First met), so you can see why the list looks like
-       it does. static/js/advanced-search.js opens and closes the panels when you tap the buttons,
-       and remembers what you opened or closed yourself. Without JavaScript both panels simply
-       stay open. (is-open is the class that means "open", aria-expanded tells screen readers.) #}
-    {% set filter_open = label_ids or lives_values or origin_values or search_scopes_changed %}
-    {# Only ONE panel is open at a time: when both would open, Filter wins (it decides who is in the list) #}
-    {% set view_open = current_sort != 'name' and not filter_open %}
-    <div class="search-menus">
-        <button type="button" class="advanced-toggle" data-menu="filter" aria-controls="panel-filter" aria-expanded="{{ 'true' if filter_open else 'false' }}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
-            Filter
-            <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
-        <button type="button" class="advanced-toggle" data-menu="view" aria-controls="panel-view" aria-expanded="{{ 'true' if view_open else 'false' }}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-            View
-            <svg class="advanced-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
-    </div>
-
     {# The FILTER panel #}
     <div class="advanced-body menu-panel {% if filter_open %}is-open{% endif %}" id="panel-filter">
 
@@ -111,9 +111,10 @@
        The choice is saved in a cookie by the script. #}
     {# Two small headings divide this panel into its two jobs: "Search in" (WHERE the text of the search box is looked for;
        this changes at once) and "Filter by" (who is left in the list; this changes when you press Search). #}
-    <h3 class="panel-heading">Search in</h3>
+    <h3 class="panel-heading">Also search in</h3>
     <div class="scope-options" role="group" aria-label="Where to search">
-        {% for scope, title in search_scope_options.items() %}
+        {# Names are always searched: they have no switch (app.py adds them) #}
+        {% for scope, title in search_scope_options.items() if scope != 'name' %}
         <label class="scope-option">
             <input type="checkbox" name="in" value="{{ scope }}" form="people-search"
                    {% if scope in search_scopes %}checked{% endif %}>
@@ -237,9 +238,10 @@
         {% if contacts %}
         <div class="view-options" role="group" aria-label="Show on the cards">
             <span class="view-options-title">Show:</span>
-            {% for part, title in card_parts.items() %}
+            {# The name is always shown: it has no switch (app.py adds it) #}
+            {% for part, title in card_parts.items() if part != 'name' %}
             {% set forced = part in forced_parts %}
-            <label class="view-option" {% if part == 'name' %}title="The name is always shown"{% elif forced %}title="Always shown while sorting by {{ title }}"{% endif %}>
+            <label class="view-option" {% if forced %}title="Always shown while sorting by {{ title }}"{% endif %}>
                 <input type="checkbox" value="{{ part }}" {% if part in shown_parts %}checked{% endif %}
                        {% if forced %}disabled data-saved="{{ 1 if part in saved_parts else 0 }}"{% endif %}>
                 <span>{{ title }}</span>
@@ -351,7 +353,7 @@
                     {% if contact.picture_path %}
                         {# loading="lazy": the browser only downloads the picture when the card comes into view #}
                         {# The small copy (/thumbs/...): the People page shows many pictures at once #}
-                        <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}" loading="lazy">
+                        <img src="{{ url_for('get_thumb', filename=contact.picture_path) }}" alt="{{ contact.name }}" loading="lazy"{{ photo_style(contact) }}>
                     {% else %}
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
                     {% endif %}
@@ -360,6 +362,11 @@
                 <div class="person-name">{{ contact.name|name_wrap }}</div>
                 {# Where they come from: a short line under the name, shown when the "Originally from" switch is on #}
                 {% if contact.origin %}<div class="person-place">Originally from <strong>{{ contact.origin }}</strong></div>{% endif %}
+                {# The "Large" layout shows the place and the date together in ONE short line ("from Lápos · met 2012") instead
+                   of the two separate lines (the CSS shows one set or the other; the Show switches still work for both) #}
+                {% if contact.origin or contact.first_met %}
+                <div class="person-line">{% if contact.origin %}<span class="pl-place">from <strong>{{ contact.origin }}</strong></span>{% endif %}{% if contact.origin and contact.first_met %}<span class="pl-sep" aria-hidden="true"> · </span>{% endif %}{% if contact.first_met %}<span class="pl-date">met {{ contact.first_met|nice_date }}</span>{% endif %}</div>
+                {% endif %}
                 {% if contact.labels %}
                 {# The labels stay on ONE line. All of them are in the HTML, and
                    static/js/card-labels.js shows as many as fit in the card's width,
