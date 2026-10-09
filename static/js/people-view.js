@@ -49,3 +49,10 @@ for (const box of switches) {
 // Save what the page shows right now, too: after a fresh visit (see app.py) the page starts from the default,
 // and the saved choice must follow, or the next page of the site would bring the old choice back.
 saveChoice();
+
+// Save the layout the page shows right now, too: after a fresh visit (see app.py) the page starts from the default
+// (compact), and the saved choice must follow, or the next page of the site would bring the old choice back.
+const shownLayout = document.querySelector('input[name="layout"]:checked');
+if (shownLayout) {
+  document.cookie = `people_layout=${shownLayout.value}; path=/; max-age=31536000; SameSite=Lax`;
+}

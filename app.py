@@ -575,8 +575,9 @@ def people():
 
     # The layout of the cards: "compact" (a round picture at the left of the name) or "large"
     # (a big picture above the name). Saved in the "people_layout" cookie by people-view.js.
-    # Anything else (no cookie, a made-up value) means the default, compact.
-    layout = request.cookies.get("people_layout")
+    # Anything else (no cookie, a made-up value) means the default, compact. A fresh visit (you opened the page yourself:
+    # see fresh_visit above) starts from the default too.
+    layout = None if fresh_visit else request.cookies.get("people_layout")
     if layout not in LAYOUTS:
         layout = DEFAULT_LAYOUT
 
