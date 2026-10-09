@@ -233,20 +233,20 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .show-more-row { display: flex; justify-content: center; margin-top: 28px; }
 .show-more-left { font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-700); }
 
-/* On a phone (600px wide or less): always exactly 2 cards per row, a bit smaller.
+/* On a phone (600px wide or less): always exactly 1 card per row.
    minmax(0, 1fr) lets a column shrink below the width of its content, so a long
    name wraps instead of pushing the cards wider than the screen.
    (This block comes AFTER the normal card rules above on purpose: when two rules
    are equally strong, the later one wins.) */
 @media (max-width: 600px) {
-  .people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .person { gap: 8px; min-height: 62px; padding: 6px 10px 6px 6px; border-radius: 18px; }
-  .person-photo { width: 48px; height: 48px; }
-  .person-photo svg { width: 24px; height: 24px; }
-  .person-name { font-size: 13.5px; }
-  .person-notes { font-size: 11.5px; }
-  .person-date { font-size: 11px; }
-  .person-place { font-size: 11px; }
+  .people-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .person { gap: 12px; min-height: 72px; padding: 8px 12px 8px 8px; border-radius: 20px; }
+  .person-photo { width: 56px; height: 56px; }
+  .person-photo svg { width: 26px; height: 26px; }
+  .person-name { font-size: 15.5px; }
+  .person-notes { font-size: 12.5px; }
+  .person-date { font-size: 12px; }
+  .person-place { font-size: 12px; }
 }
 
 /* ---- Layout "large": the big picture above the name (the other layout choice, set under
@@ -274,14 +274,14 @@ main { flex: 1; max-width: 960px; width: 100%; margin: 0 auto; padding: 12px 20p
 .layout-large .person-labels { justify-content: flex-start; }
 .layout-options { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 600px) {
-  /* large cards on a phone: 2 per row, a little smaller */
-  .people-grid.layout-large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  /* large cards on a phone: 1 per row, like the compact ones (with a big picture on top) */
+  .people-grid.layout-large { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .layout-large .person { padding: 8px 8px 12px; gap: 4px; border-radius: 22px; }
   .layout-large .person-photo { margin-bottom: 4px; }
-  .layout-large .person-photo svg { width: 32px; height: 32px; }
-  .layout-large .person-body { padding: 0 2px; }
-  .layout-large .person-name { font-size: 15px; }
-  .layout-large .person-notes { font-size: 12.5px; }
+  .layout-large .person-photo svg { width: 40px; height: 40px; }
+  .layout-large .person-body { padding: 0 4px; }
+  .layout-large .person-name { font-size: 17px; }
+  .layout-large .person-notes { font-size: 13.5px; }
   .layout-large .person-date { font-size: 12px; }
   .layout-large .person-place { font-size: 12px; }
 }
@@ -1092,15 +1092,15 @@ body:has(#panel-filter.is-open) .active-filters { display: none; }
    name, and "First met" at the bottom). The Show switches still work: each one hides its own part of the line. */
 .person-line { display: block; font-size: 12px; color: var(--color-neutral-700); overflow-wrap: anywhere; }
 .person-line strong { font-weight: 600; color: var(--color-text); }
-.person-line .pl-date { font-style: italic; }
+.person-line .pl-date { font-style: italic; white-space: nowrap; }   /* "met 24 Jan 2025" stays together on one line */
 .person-place, .person-date { display: none; }
 .layout-large .person-line { font-size: 12.5px; }
 .people-grid.hide-origin .pl-place, .people-grid.hide-firstmet .pl-date,
 .people-grid.hide-origin .pl-sep, .people-grid.hide-firstmet .pl-sep { display: none; }
 .people-grid.hide-origin.hide-firstmet .person-line { display: none; }
 @media (max-width: 600px) {
-  .person-line { font-size: 11px; }
-  .layout-large .person-line { font-size: 12px; }
+  .person-line { font-size: 12px; }
+  .layout-large .person-line { font-size: 12.5px; }
 }
 
 /* A contact's page: less empty space between the places line and the NOTES, and between the notes and the LABELS
